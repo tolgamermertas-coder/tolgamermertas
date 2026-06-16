@@ -11,7 +11,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 PREMIUM PRO MULTI-CURRENCY DASHBOARD (V2.2 ALTIN DÜZELTMELİ)
+# # 7/24 PREMIUM PRO MULTI-CURRENCY DASHBOARD (V2.1 KUSURSUZ BULUT)
 # -------------------------------------------------------------------------
 
 BOT_TOKEN = "8778250529:AAFu08dUsJNiV7YySGB7BFJzT93VmKtdeys"
@@ -60,11 +60,9 @@ def canli_fiyat_cek(ticker, tip="HISSE"):
         if not df.empty:
             kapanis = df['Close'].iloc[-1]
             if tip == "ALTIN":
-                # Altın S1 Sertifikası için Ons -> Gram -> 0.01 Gram Dönüşüm Formülü
                 usd_try = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
                 gram_altin = (kapanis / 31.1034768) * usd_try
-                # Altın S1 darphane sertifikası 0.01 gram altına denk geldiği için 100'e bölüyoruz
-                return round(gram_altin / 100, 2)
+                return round(gram_altin / 10, 2)
             return round(kapanis, 2)
     except:
         pass
@@ -85,7 +83,7 @@ def ana_menu_gonder(message):
     if not guvenlik_kontrolu(message.from_user.id):
         return
     
-    msg = bot.send_message(message.chat.id, "🔄 Canlı piyasa verileri çekiliyor ve Altın S1 formülü kalibre ediliyor...")
+    msg = bot.send_message(message.chat.id, "🔄 Canlı piyasa verileri çekiliyor ve Premium Pro Dashboard hazırlanıyor, lütfen bekleyin...")
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -226,5 +224,5 @@ def sunucu_calistir():
 if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
-    print("💎 Premium Pro v2.2 Sistemi Aktif, Altın Kalibrasyonu Kuruldu...")
+    print("💎 Premium Pro v2.1 Sistemi Aktif, Telegram Bağlantısı Kuruluyor...")
     bot.infinity_polling()
