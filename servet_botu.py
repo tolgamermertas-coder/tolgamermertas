@@ -11,7 +11,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 PREMIUM PRO MULTI-CURRENCY DASHBOARD (V2.0 KUSURSUZ BULUT)
+# # 7/24 PREMIUM PRO MULTI-CURRENCY DASHBOARD (V2.1 KUSURSUZ BULUT)
 # -------------------------------------------------------------------------
 
 BOT_TOKEN = "8778250529:AAFu08dUsJNiV7YySGB7BFJzT93VmKtdeys"
@@ -49,7 +49,6 @@ def veri_tabani_kur():
             tl_degeri REAL
         )
     ''')
-    # Sabit varlıklar için başlangıç değerleri (BES vb.)
     cursor.execute("INSERT OR IGNORE INTO sabit_varliklar (varlik_adi, tl_degeri) VALUES ('BES', 0.0)")
     conn.commit()
     conn.close()
@@ -61,7 +60,6 @@ def canli_fiyat_cek(ticker, tip="HISSE"):
         if not df.empty:
             kapanis = df['Close'].iloc[-1]
             if tip == "ALTIN":
-                # Altın S1 için Ons/Dolar bazlı özel hesaplama mantığı
                 usd_try = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
                 gram_altin = (kapanis / 31.1034768) * usd_try
                 return round(gram_altin / 10, 2)
@@ -120,10 +118,11 @@ def ana_menu_gonder(message):
         kar_zarar_tl = mevcut_deger - toplam_maliyet
         kar_zarar_yuzde = (kar_zarar_tl / toplam_maliyet) * 100 if toplam_maliyet > 0 else 0
         emoji = "🟢" if kar_zarar_tl >= 0 else "🔴"
+        isaret = "+" if kar_zarar_tl >= 0 else ""
         
         rapor_metni += f"🔹 **{varlik}**: {info['lot']} Lot\n"
         rapor_metni += f"   Maliyet: {info['maliyet']:.2f} TL | Güncel: {guncel_fiyat:.2f} TL\n"
-        rapor_metni += f"   Değer: {mevcut_deger:,.2f} TL | K/Z: {emoji} %{kar_zarar_yuzde+.2f}\n\n"
+        rapor_metni += f"   Değer: {mevcut_deger:,.2f} TL | K/Z: {emoji} {isaret}{kar_zarar_yuzde:.2f}%\n\n"
         
         if mevcut_deger > 0:
             isimler.append(varlik)
@@ -137,11 +136,12 @@ def ana_menu_gonder(message):
     toplam_kar_zarar = toplam_borsa_tl - toplam_maliyet_tl
     toplam_kz_yuzde = (toplam_kar_zarar / toplam_maliyet_tl) * 100 if toplam_maliyet_tl > 0 else 0
     genel_emoji = "🚀" if toplam_kar_zarar >= 0 else "📉"
+    genel_isaret = "+" if toplam_kar_zarar >= 0 else ""
 
     rapor_metni += "────────────────────\n"
     rapor_metni += f"🛡️ **BES Birikimi:** {bes_degeri:,.2f} TL\n"
     rapor_metni += f"💰 **Net Servet Değeri:** {net_servet:,.2f} TL\n"
-    rapor_metni += f"{genel_emoji} **Toplam Borsa K/Z Oranı:** %{toplam_kz_yuzde+.2f} ({toplam_kar_zarar:,.2f} TL)\n"
+    rapor_metni += f"{genel_emoji} **Toplam Borsa K/Z Oranı:** {genel_isaret}{toplam_kz_yuzde:.2f}% ({toplam_kar_zarar:,.2f} TL)\n"
     rapor_metni += f"ℹ️ *Dolar: {usd_kur:.2f} TL | Euro: {eur_kur:.2f} TL*"
 
     bot.delete_message(message.chat.id, msg.message_id)
@@ -224,5 +224,5 @@ def sunucu_calistir():
 if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
-    print("💎 Premium Pro v2.0 Sistemi Aktif, Telegram Bağlantısı Kuruluyor...")
+    print("💎 Premium Pro v2.1 Sistemi Aktif, Telegram Bağlantısı Kuruluyor...")
     bot.infinity_polling()
