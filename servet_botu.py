@@ -14,7 +14,7 @@ from threading import Thread
 # 7/24 PREMIUM MULTI-CURRENCY DASHBOARD (KUSURSUZ BULUT)
 # ---------------------------------------------------------
 
-BOT_TOKEN = ""
+BOT_TOKEN = "8778250529:AAFu08dUsJNiV7YySGB7BFJzT93VmKtdeys"
 YETKILI_USER_ID = 7796185729  
 bot = telebot.TeleBot(BOT_TOKEN)
 DB_FILE = "wealth_management.db"
