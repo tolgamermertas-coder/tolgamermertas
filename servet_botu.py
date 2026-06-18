@@ -12,7 +12,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 PREMIUM ELITE MULTI-CURRENCY DASHBOARD (V3.1 AYLIK ALIM ENTEGRELİ)
+# # 7/24 PREMIUM ELITE MULTI-CURRENCY DASHBOARD (V3.3 SIFIR HATA SÜRÜMÜ)
 # -------------------------------------------------------------------------
 
 BOT_TOKEN = "8778250529:AAFu08dUsJNiV7YySGB7BFJzT93VmKtdeys"
@@ -23,11 +23,8 @@ DB_FILE = "wealth_management.db"
 app = Flask('')
 @app.route('/')
 def home():
-    return "Premium Elite v3.1 Sistemi Kesintisiz Aktif"
+    return "Premium Elite v3.3 Sistemi Kesintisiz Aktif"
 
-# -------------------------------------------------------------------------
-# SABİT MALİYETLER VE BAŞLANGIÇ LOTLARI (VERİTABANINDA YOKSA KULLANILIR)
-# -------------------------------------------------------------------------
 V2_VARLIKLAR = {
     "ASELS": {"tip": "HISSE", "ticker": "ASELS.IS", "lot": 756, "maliyet": 116.11},
     "TUPRS": {"tip": "HISSE", "ticker": "TUPRS.IS", "lot": 152, "maliyet": 168.10},
@@ -43,7 +40,6 @@ def guvenlik_kontrolu(user_id):
 def veri_tabani_kur():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    # Sabit Varlıklar Tablosu (BES vb.)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sabit_varliklar (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +47,6 @@ def veri_tabani_kur():
             tl_degeri REAL
         )
     ''')
-    # Dinamik Lot Tablosu
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS portfoy_varliklari (
             varlik_adi TEXT PRIMARY KEY,
@@ -61,7 +56,6 @@ def veri_tabani_kur():
             maliyet REAL
         )
     ''')
-    # Alarm Tablosu
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS alarmlar (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,7 +145,7 @@ def ana_menu_gonder(message):
 
     toplam_borsa_tl = 0
     toplam_maliyet_tl = 0
-    rapor_metni = "👑 **PREMIUM ELITE KONSOLİDE SERVET RAPORU (v3.1)**\n\n"
+    rapor_metni = "👑 **PREMIUM ELITE KONSOLİDE SERVET RAPORU (v3.3)**\n\n"
     
     varliklar = varliklari_getir()
     isimler = []
@@ -256,29 +250,27 @@ def callback_izleyici(call):
 
     elif call.data == "lot_duzenle_menu":
         bot.answer_callback_query(call.id)
-        msg = bot.send_message(call.message.chat.id, "🔄 **PORTFÖYÜ SIFIRLAMA / YENİDEN YAZMA**\n\nBu ekran mevcut değerleri silip sıfırdan lot yazar. Lütfen şu formatta gönderin:\n\n`HİSSE LOT MALİYET`\n*(Örn: ASELS 756 116.11)*")
+        msg = bot.send_message(call.message.chat.id, "🔄 **PORTFÖYÜ SIFIRLAMA / YENİDEN YAZMA**\n\nMevcut lotu silip sıfırdan kaydeder:\n\n`HİSSE LOT MALİYET`\n*(Örn: ASELS 756 116.11)*")
         bot.register_next_step_handler(msg, dinamik_lot_kaydet)
 
     elif call.data == "aylik_alim_menu":
         bot.answer_callback_query(call.id)
-        msg = bot.send_message(call.message.chat.id, "🛒 **AYLIK YENİ ALIM EKLEME (MALİYET ORTALAMA)**\n\nBu ay aldığınız yeni lotları ve alım fiyatını yazın. Sistem eski lotlarla birleştirip otomatik yeni ortalama maliyet hesaplar:\n\n`HİSSE ALINAN_LOT ALIM_FİYATI`\n*(Örn: TUPRS 20 162.40)*")
+        msg = bot.send_message(call.message.chat.id, "🛒 **AYLIK YENİ ALIM EKLEME (MALİYET ORTALAMA)**\n\nYeni aldığınız lotları yazın, sistem ortalama maliyeti kendisi hesaplar:\n\n`HİSSE ALINAN_LOT ALIM_FİYATI`\n*(Örn: TUPRS 20 162.40)*")
         bot.register_next_step_handler(msg, aylik_alim_hesapla_kaydet)
 
     elif call.data == "alarm_kur_menu":
         bot.answer_callback_query(call.id)
-        msg = bot.send_message(call.message.chat.id, "🚨 **FİYAT ALARMI KURMA**\n\nLütfen alarm kurmak istediğiniz hisseyi ve hedef fiyatı yazın:\n\n`HİSSE FİYAT`\n*(Örn: TUPRS 185)*")
+        msg = bot.send_message(call.message.chat.id, "🚨 **FİYAT ALARMI KURMA**\n\nHisse ve hedef fiyatı yazın:\n\n`HİSSE FİYAT`\n*(Örn: TUPRS 185)*")
         bot.register_next_step_handler(msg, alarm_kaydet)
 
     elif call.data == "eylul_simule":
         bot.answer_callback_query(call.id)
         sim_muhafazakar = net_servet_tl * 1.15
         sim_iyimser = net_servet_tl * 1.30
-        
         sim_metni = "🎯 **EYLÜL SONU PORTFÖY DURUMU TAHMİN SİMÜLASYONU**\n\n"
         sim_metni += f"💼 Mevcut Net Servetiniz: **{net_servet_tl:,.2f} TL**\n\n"
         sim_metni += f"📉 **Muhafazakar Senaryo (+%15):**\n   Tahmini Değer: `{sim_muhafazakar:,.2f} TL`\n\n"
         sim_metni += f"🚀 **İyimser / Boğa Senaryosu (+%30):**\n   Tahmini Değer: `{sim_iyimser:,.2f} TL`\n\n"
-        sim_metni += "ℹ️ *Bu grafiksel tahminler varlıklarınızın tarihsel trendleri ve piyasa çarpanları baz alınarak simüle edilmiştir.*"
         bot.send_message(call.message.chat.id, sim_metni, parse_mode="Markdown")
 
 def aylik_alim_hesapla_kaydet(message):
@@ -290,17 +282,14 @@ def aylik_alim_hesapla_kaydet(message):
         
         varliklar = varliklari_getir()
         
-        # Eğer hisse listede zaten varsa ortalama maliyet hesapla
         if v_adi in varliklar:
             eski_lot = varliklar[v_adi]["lot"]
             eski_maliyet = varliklar[v_adi]["maliyet"]
-            
             toplam_lot = eski_lot + eklenen_lot
             yeni_maliyet = ((eski_lot * eski_maliyet) + (eklenen_lot * alim_fiyati)) / toplam_lot
             ticker_str = varliklar[v_adi]["ticker"]
             tip_str = varliklar[v_adi]["tip"]
         else:
-            # Sıfırdan yeni bir hisse ekleniyorsa
             toplam_lot = eklenen_lot
             yeni_maliyet = alim_fiyati
             tip_str = "ALTIN" if "ALTIN" in v_adi else "HISSE"
@@ -315,10 +304,9 @@ def aylik_alim_hesapla_kaydet(message):
         ''', (v_adi, tip_str, ticker_str, toplam_lot, yeni_maliyet))
         conn.commit()
         conn.close()
-        
-        bot.send_message(message.chat.id, f"🛒 **Alım Başarıyla Eklendi!**\n\n🔹 **Hisse**: {v_adi}\n📦 Yeni Toplam Lot: **{toplam_lot:.2f} Lot**\n🧮 Hesaplanan Yeni Ortalama Maliyet: **{yeni_maliyet:.2f} TL**")
+        bot.send_message(message.chat.id, f"🛒 **Alım Eklendi!**\n\n🔹 **Hisse**: {v_adi}\n📦 Yeni Toplam Lot: **{toplam_lot:.2f}**\n🧮 Yeni Ortalama Maliyet: **{yeni_maliyet:.2f} TL**")
     except:
-        bot.send_message(message.chat.id, "❌ Hatalı biçim. Lütfen aralarda boşluk bırakarak `HİSSE LOT_SAYISI ALIM_FİYATI` şeklinde tekrar yazın.")
+        bot.send_message(message.chat.id, "❌ Hatalı biçim. Örn: `TUPRS 20 162.40` şeklinde yazın.")
 
 def dinamik_lot_kaydet(message):
     try:
@@ -340,10 +328,9 @@ def dinamik_lot_kaydet(message):
         ''', (v_adi, tip_str, ticker_str, yeni_lot, yeni_maliyet))
         conn.commit()
         conn.close()
-        
-        bot.send_message(message.chat.id, f"✅ **{v_adi}** varlığınız sıfırlanarak **{yeni_lot:.2f} Lot / {yeni_maliyet:.2f} TL** maliyet olarak veritabanına işlendi!")
+        bot.send_message(message.chat.id, f"✅ **{v_adi}** portföyde **{yeni_lot:.2f} Lot / {yeni_maliyet:.2f} TL** olarak güncellendi!")
     except:
-        bot.send_message(message.chat.id, "❌ Hatalı biçim. Lütfen `HİSSE LOT MALİYET` şeklinde yazın.")
+        bot.send_message(message.chat.id, "❌ Hatalı biçim. Örn: `ASELS 756 116.11` şeklinde yazın.")
 
 def alarm_kaydet(message):
     try:
@@ -353,7 +340,7 @@ def alarm_kaydet(message):
         
         varliklar = varliklari_getir()
         if v_adi not in varliklar:
-            bot.send_message(message.chat.id, "❌ Bu varlık listenizde bulunmuyor.")
+            bot.send_message(message.chat.id, "❌ Bu varlık portföyünüzde yok.")
             return
             
         guncel = canli_fiyat_cek(varliklar[v_adi]["ticker"], varliklar[v_adi]["tip"]) or varliklar[v_adi]["maliyet"]
@@ -364,17 +351,16 @@ def alarm_kaydet(message):
         cursor.execute("INSERT INTO alarmlar (varlik_adi, hedef_fiyat, yon) VALUES (?, ?, ?)", (v_adi, hedef, yon))
         conn.commit()
         conn.close()
-        
-        bot.send_message(message.chat.id, f"🚨 Alarm kuruldu! **{v_adi}** fiyatı **{hedef:.2f} TL** seviyesini {yon.lower()} yönlü kırdığında size haber vereceğim.")
+        bot.send_message(message.chat.id, f"🚨 Alarm kuruldu! **{v_adi}** {hedef:.2f} TL seviyesini kırdığında haber vereceğim.")
     except:
-        bot.send_message(message.chat.id, "❌ Hatalı biçim. Lütfen `HİSSE FİYAT` formatında yazın.")
+        bot.send_message(message.chat.id, "❌ Hatalı biçim. Örn: `TUPRS 185` şeklinde yazın.")
 
 def sabit_varlik_kaydet(message):
     try:
         yeni_deger = float(message.text.replace(".", "").replace(",", ".").strip())
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
-        cursor.execute("UPDATE sabit_varliklar SET tl_degeri=? WHERE varlik_adi='BES'")
+        cursor.execute("UPDATE sabit_varliklar SET tl_degeri=? WHERE varlik_adi='BES'", (yeni_deger,))
         conn.commit()
         conn.close()
         bot.send_message(message.chat.id, f"✅ BES değeriniz **{yeni_deger:,.2f} TL** olarak güncellendi.")
@@ -403,7 +389,7 @@ def alarm_kontrol_dongusu():
                                 tetiklendi = True
                                 
                             if tetiklendi:
-                                bot.send_message(YETKILI_USER_ID, f"🚨🔔 **ALARM TETİKLENDİ, TOLGA BEY!**\n\n**{v_adi}** güncel fiyatı **{guncel:.2f} TL** seviyesine ulaştı. Hedefiniz olan {hedef:.2f} TL kırıldı! 🚀")
+                                bot.send_message(YETKILI_USER_ID, f"🚨🔔 **ALARM TETİKLENDİ!**\n\n**{v_adi}** güncel fiyatı **{guncel:.2f} TL** seviyesine ulaştı. Hedefiniz olan {hedef:.2f} TL kırıldı! 🚀")
                                 cursor.execute("UPDATE alarmlar SET aktif=0 WHERE id=?", (al_id,))
             conn.commit()
             conn.close()
@@ -418,5 +404,5 @@ if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
     Thread(target=alarm_kontrol_dongusu).start()
-    print("👑 Premium Elite v3.1 Sistemi Aktif, Aylık Alım ve Maliyet Hesaplayıcı Dinamikleri Kuruldu...")
+    print("👑 Premium Elite v3.3 Sıfır Hata Modu Kesintisiz Yayında...")
     bot.infinity_polling()
