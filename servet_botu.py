@@ -12,7 +12,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 PREMIUM GRAND VAULT DASHBOARD (V4.0 - NİHAİ KUSURSUZ GÖRSEL DEVRİM)
+# # 7/24 GRAND VAULT DASHBOARD (V4.1 - STABİL KURUMSAL SÜRÜM)
 # -------------------------------------------------------------------------
 
 BOT_TOKEN = "8778250529:AAFu08dUsJNiV7YySGB7BFJzT93VmKtdeys"
@@ -25,17 +25,16 @@ USER_STATE = {}
 app = Flask('')
 @app.route('/')
 def home():
-    return "Grand Vault v4.0 Ultimate Aktif"
+    return "Grand Vault v4.1 Kesintisiz Yayında"
 
-# Başlangıç Varlıkları Kalibrasyonu
 V2_VARLIKLAR = {
     "ASELS": {"tip": "HISSE", "ticker": "ASELS.IS", "lot": 756, "maliyet": 116.11, "logo": "🛡️ 𝗔𝗦𝗘𝗟𝗦"},
     "TUPRS": {"tip": "HISSE", "ticker": "TUPRS.IS", "lot": 152, "maliyet": 168.10, "logo": "🛢️ 𝗧𝗨𝗣𝗥𝗦"},
     "ENJSA": {"tip": "HISSE", "ticker": "ENJSA.IS", "lot": 260, "maliyet": 108.60, "logo": "⚡ 𝗘𝗡𝗝𝗦𝗔"},
     "EREGL": {"tip": "HISSE", "ticker": "EREGL.IS", "lot": 354, "maliyet": 24.64,  "logo": "🏗️ 𝗘𝗥𝗘𝗚𝗟"},
     "SISE":  {"tip": "HISSE", "ticker": "SISE.IS",  "lot": 338, "maliyet": 53.76,  "logo": "🥛 𝗦𝗜𝗦𝗘"},
-    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔𝗟𝗧𝗜𝗡.𝗦𝟭"},
-    "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 𝗚𝗿𝗮𝗺 𝗔𝗹𝘁ı𝗻"},
+    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔verify𝗟𝗧𝗜𝗡.𝗦𝟭"},
+    "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 𝗚Layout𝗿𝗮𝗺 𝗔𝗹𝘁ı𝗻"},
     "CEYREK_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🪙 𝗖̧𝗲𝘆𝗿𝗲𝗸 𝗔𝗹𝘁ı𝗻"},
     "YARIM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🌗 𝗬𝗮𝗿ı𝗺 𝗔𝗹𝘁ı𝗻"},
     "ATA_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "👑 𝗔𝘁𝗮 𝗔𝗹𝘁ı𝗻"}
@@ -80,9 +79,8 @@ def veri_tabani_kur():
     ''')
     
     cursor.execute("INSERT OR IGNORE INTO sabit_varliklar (varlik_adi, tl_degeri) VALUES ('BES', 0.0)")
-        
-    for doviz in ["USD", "EUR"]:
-        cursor.execute("INSERT OR IGNORE INTO doviz_kasasi (doviz_turu, miktar) VALUES (?, 0.0)", (doviz,))
+    for d in ["USD", "EUR"]:
+        cursor.execute("INSERT OR IGNORE INTO doviz_kasasi (doviz_turu, miktar) VALUES (?, 0.0)", (d,))
     
     for k, v in V2_VARLIKLAR.items():
         cursor.execute('''
@@ -119,18 +117,20 @@ def canli_fiyat_cek(ticker, tip="HISSE", varlik_adi=""):
         if not df.empty:
             kapanis = df['Close'].iloc[-1]
             if tip in ["ALTIN", "ALTIN_BORSASI", "FIZIKI_ALTIN"]:
-                usd_try = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
-                gram_altin = (kapanis / 31.1034768) * usd_try
+                usd_try = 34.20
+                try:
+                    usd_df = yf.Ticker("TRY=X").history(period="1d")
+                    if not usd_df.empty: usd_try = usd_df['Close'].iloc[-1]
+                except: pass
                 
+                gram_altin = (kapanis / 31.1034768) * usd_try
                 if varlik_adi == "GRAM_ALTIN": return round(gram_altin, 2)
                 elif varlik_adi == "CEYREK_ALTIN": return round(gram_altin * 1.605, 2)
                 elif varlik_adi == "YARIM_ALTIN": return round(gram_altin * 3.21, 2)
                 elif varlik_adi == "ATA_ALTIN": return round(gram_altin * 6.61, 2)
-                
                 return round(gram_altin, 2)
             return round(kapanis, 2)
-    except:
-        pass
+    except: pass
     return None
 
 def rapor_butonlari_olustur():
@@ -140,26 +140,25 @@ def rapor_butonlari_olustur():
         InlineKeyboardButton("💶 EUR Rapor", callback_data="rapor_eur")
     )
     markup.row(
-        InlineKeyboardButton("🛒 Aylık Alım Ekle (Hisse/Altın)", callback_data="sihirbaz_basla"),
-        InlineKeyboardButton("💵 Döviz Kasasını Güncelle", callback_data="doviz_kasasi_menu")
+        InlineKeyboardButton("🛒 Aylık Alım Ekle", callback_data="sihirbaz_basla"),
+        InlineKeyboardButton("💵 Döviz Kasasını Düzenle", callback_data="doviz_kasasi_menu")
     )
     markup.row(
         InlineKeyboardButton("🚨 Fiyat Alarmı Kur", callback_data="alarm_kur_menu"),
         InlineKeyboardButton("🎯 Eylül Simülasyonu", callback_data="eylul_simule")
     )
     markup.row(
-        InlineKeyboardButton("🔄 Portföy Sıfırla/Düzenle", callback_data="lot_duzenle_menu"),
+        InlineKeyboardButton("🔄 Portföy Sıfırla", callback_data="lot_duzenle_menu"),
         InlineKeyboardButton("🛡️ BES Güncelle", callback_data="sabit_guncelle")
     )
-    markup.row(InlineKeyboardButton("🔄 Dashboard Ekranını Yenile", callback_data="yenile_ana"))
+    markup.row(InlineKeyboardButton("🔄 Dashboard Yenile", callback_data="yenile_ana"))
     return markup
 
 @bot.message_handler(commands=['start', 'menu'])
 def ana_menu_gonder(message):
-    if not guvenlik_kontrolu(message.from_user.id):
-        return
+    if not guvenlik_kontrolu(message.from_user.id): return
     
-    msg = bot.send_message(message.chat.id, "🏢 Borsa İstanbul (BIST) ve Darphane verileri çekiliyor, Grand Vault v4.0 Konsolu hazırlanıyor...")
+    msg = bot.send_message(message.chat.id, "🏛️ Borsa İstanbul ve Darphane Hatları Senkronize Ediliyor...")
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -167,31 +166,28 @@ def ana_menu_gonder(message):
     bes_degeri = cursor.fetchone()[0]
     conn.close()
     
+    usd_kur, eur_kur = 34.30, 36.80
     try:
-        usd_kur = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
-        eur_kur = yf.Ticker("EURTRY=X").history(period="1d")['Close'].iloc[-1]
-    except:
-        usd_kur, eur_kur = 33.0, 36.0
+        u_df = yf.Ticker("TRY=X").history(period="1d")
+        if not u_df.empty: usd_kur = u_df['Close'].iloc[-1]
+        e_df = yf.Ticker("EURTRY=X").history(period="1d")
+        if not e_df.empty: eur_kur = e_df['Close'].iloc[-1]
+    except: pass
 
-    canli_gram_altin = canli_fiyat_cek("GC=F", "ALTIN") or 2500.0
+    canli_gram_altin = canli_fiyat_cek("GC=F", "ALTIN") or 2520.0
 
-    varliklar = varliklari_getir()
-    
-    hisse_metni = "🏛️ **BORSA İSTANBUL (BIST) DASHBOARD**\n"
-    hisse_metni += "────────────────────\n"
-    altin_metni = "✨ **DARPHANE & ALTIN SERVETİ DASHBOARD**\n"
-    altin_metni += "────────────────────\n"
+    hisse_metni = "🏛️ **BORSA İSTANBUL (BIST) DASHBOARD**\n────────────────────\n"
+    altin_metni = "\n✨ **DARPHANE & ALTIN SEPETİ DASHBOARD**\n────────────────────\n"
     
     toplam_hisse_tl = 0
     toplam_altin_tl = 0
     toplam_maliyet_tl = 0
     
-    isimler = []
-    degerler = []
+    varliklar = varliklari_getir()
+    isimler, degerler = [], []
 
     for varlik, info in varliklar.items():
-        if info["lot"] <= 0:
-            continue
+        if info["lot"] <= 0: continue
             
         guncel_fiyat = canli_fiyat_cek(info["ticker"], info["tip"], varlik) or info["maliyet"]
         mevcut_deger = info["lot"] * guncel_fiyat
@@ -217,21 +213,18 @@ def ana_menu_gonder(message):
         else:
             altin_metni += line
             toplam_altin_tl += mevcut_deger
-            if varlik == "ALTIN.S1":
-                toplam_maliyet_tl += toplam_maliyet
+            if varlik == "ALTIN.S1": toplam_maliyet_tl += toplam_maliyet
 
         isimler.append(varlik)
         degerler.append(mevcut_deger)
 
-    hisse_metni += f"🏛️ **HİSSE SENEDİ ALT TOPLAMI: {toplam_hisse_tl:,.2f} TL**\n\n"
-    altin_metni += f"👑 **ALTIN VARLIKLARI ALT TOPLAMI: {toplam_altin_tl:,.2f} TL**\n\n"
+    hisse_metni += f"🏢 **HİSSE SENEDİ PORTFÖY TOPLAMI: {toplam_hisse_tl:,.2f} TL**\n"
+    altin_metni += f"📀 **ALTIN SEPETİ TOPLAMI: {toplam_altin_tl:,.2f} TL**\n"
 
-    # Nakit Döviz Kasası Bölümü
+    # Döviz Kasası
     kasa = doviz_kasasini_getir()
     toplam_doviz_tl = 0
-    doviz_metni = "💵 **GLOBAL NAKİT VAULT (DÖVİZ KASASI)**\n"
-    doviz_metni += "────────────────────\n"
-    
+    doviz_metni = "\n💵 **GLOBAL NAKİT VAULT (DÖVİZ KASASI)**\n────────────────────\n"
     if kasa["USD"] > 0:
         usd_tl = kasa["USD"] * usd_kur
         toplam_doviz_tl += usd_tl
@@ -244,36 +237,26 @@ def ana_menu_gonder(message):
         doviz_metni += f"   🇪🇺 Euro Kasası: {kasa['EUR']:,.2f} EUR ➔ **{eur_tl:,.2f} TL**\n"
         isimler.append("Nakit EUR")
         degerler.append(eur_tl)
-        
-    if toplam_doviz_tl <= 0:
-        doviz_metni += "   ⚠️ Nakit döviz kasası şu an boş.\n"
-    doviz_metni += "\n"
 
-    if bes_degeri > 0:
-        isimler.append("BES")
-        degerler.append(bes_degeri)
-
-    # Büyük Konsolide Hesaplamalar
     net_servet = toplam_hisse_tl + toplam_altin_tl + toplam_doviz_tl + bes_degeri
-    toplam_borsa_kz = (toplam_hisse_tl + (varliklar.get("ALTIN.S1", {}).get("lot", 0) * canli_fiyat_cek("GC=F", "ALTIN_BORSASI", "ALTIN.S1"))) - toplam_maliyet_tl
+    toplam_borsa_kz = (toplam_hisse_tl + (varliklar.get("ALTIN.S1", {}).get("lot", 0) * 64.00)) - toplam_maliyet_tl
     toplam_kz_yuzde = (toplam_borsa_kz / toplam_maliyet_tl) * 100 if toplam_maliyet_tl > 0 else 0
     genel_emoji = "🚀" if toplam_borsa_kz >= 0 else "📉"
-    genel_isaret = "+" if toplam_borsa_kz >= 0 else ""
 
     nihai_rapor = hisse_metni + altin_metni + doviz_metni
     nihai_rapor += "👑 ==============================\n"
     nihai_rapor += f"🛡️ **Bireysel Emeklilik (BES):** {bes_degeri:,.2f} TL\n"
     nihai_rapor += f"💎 **BÜTÜN SERVETİMİN TOPLAMI:** {net_servet:,.2f} TL\n"
-    nihai_rapor += f"{genel_emoji} **BIST Net Portföy K/Z Oranı:** {genel_isaret}{toplam_kz_yuzde:.2f}% ({toplam_borsa_kz:,.2f} TL)\n"
-    nihai_rapor += f"ℹ️ *USD: {usd_kur:.2f} TL | EUR: {eur_kur:.2f} TL | Ons Altın/Gr: {canli_gram_altin:.2f} TL*"
+    nihai_rapor += f"{genel_emoji} **BIST Net K/Z Oranı:** {genel_emoji} {toplam_kz_yuzde:+.2f}% ({toplam_borsa_kz:,.2f} TL)\n"
+    nihai_rapor += f"ℹ️ *USD: {usd_kur:.2f} TL | EUR: {eur_kur:.2f} TL | Has Altın/Gr: {canli_gram_altin:.2f} TL*"
 
-    bot.delete_message(message.chat.id, msg.message_id)
+    try: bot.delete_message(message.chat.id, msg.message_id)
+    except: pass
 
     if degerler:
         plt.figure(figsize=(6,6))
-        # Kurumsal renk paleti ve şık dağılım
-        plt.pie(degerler, labels=isimler, autopct='%1.1f%%', startangle=140, colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'])
-        plt.title("GRAND VAULT v4.0 GLOBAL VARLIK DAĞILIMI", fontsize=12, fontweight='bold', color='#111111')
+        plt.pie(degerler, labels=isimler, autopct='%1.1f%%', startangle=140)
+        plt.title("GRAND VAULT GLOBAL VARLIK DAĞILIMI", fontsize=11, fontweight='bold')
         buf = io.BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
@@ -282,7 +265,6 @@ def ana_menu_gonder(message):
     else:
         bot.send_message(message.chat.id, nihai_rapor, parse_mode="Markdown", reply_markup=rapor_butonlari_olustur())
 
-# ---- DİĞER TELEGRAM CALLBACK VE METOT ADIMLARI (v3.8 İLE AYNI STABİL YAPI) ----
 @bot.callback_query_handler(func=lambda call: True)
 def callback_izleyici(call):
     if not guvenlik_kontrolu(call.from_user.id): return
@@ -292,12 +274,17 @@ def callback_izleyici(call):
     bes_degeri = cursor.fetchone()[0]
     conn.close()
 
+    usd_kur, eur_kur = 34.30, 36.80
     try:
-        usd_kur = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
-        eur_kur = yf.Ticker("EURTRY=X").history(period="1d")['Close'].iloc[-1]
-    except: usd_kur, eur_kur = 33.0, 36.0
+        u_df = yf.Ticker("TRY=X").history(period="1d")
+        if not u_df.empty: usd_kur = u_df['Close'].iloc[-1]
+        e_df = yf.Ticker("EURTRY=X").history(period="1d")
+        if not e_df.empty: eur_kur = e_df['Close'].iloc[-1]
+    except: pass
 
+    canli_gram_altin = canli_fiyat_cek("GC=F", "ALTIN") or 2520.0
     varliklar = varliklari_getir()
+    
     toplam_portfoy_tl = 0
     for varlik, info in varliklar.items():
         guncel_fiyat = canli_fiyat_cek(info["ticker"], info["tip"], varlik) or info["maliyet"]
@@ -309,7 +296,8 @@ def callback_izleyici(call):
 
     if call.data == "yenile_ana":
         bot.answer_callback_query(call.id, "🔄 Güncelleniyor...")
-        bot.delete_message(call.message.chat.id, call.message.message_id)
+        try: bot.delete_message(call.message.chat.id, call.message.message_id)
+        except: pass
         ana_menu_gonder(call.message)
     elif call.data == "rapor_usd":
         bot.answer_callback_query(call.id)
@@ -323,7 +311,7 @@ def callback_izleyici(call):
         bot.register_next_step_handler(msg, sabit_varlik_kaydet)
     elif call.data == "lot_duzenle_menu":
         bot.answer_callback_query(call.id)
-        msg = bot.send_message(call.message.chat.id, "🔄 **PORTFÖYÜ SIFIRLAMA (LOT MALİYET)**\n\n`VARLIK_ADI LOT MALİYET` formatında gönderin:")
+        msg = bot.send_message(call.message.chat.id, "🔄 **PORTFÖYÜ SIFIRLAMA (LOT MALİYET)**\n\n`VARLIK_ADI LOT MALİYET` şeklinde gönderin:")
         bot.register_next_step_handler(msg, dinamik_lot_kaydet)
     elif call.data == "alarm_kur_menu":
         bot.answer_callback_query(call.id)
@@ -378,7 +366,7 @@ def doviz_kasasi_kaydet(message):
 def yeni_stok_adi_al(message):
     hisse_adi = message.text.strip().upper()
     USER_STATE[message.from_user.id] = {"hisse": hisse_adi, "is_new": True}
-    msg = bot.send_message(message.chat.id, f"📦 **{hisse_adi}** lot miktarı:")
+    msg = bot.send_message(message.chat.id, f"📦 **{hisse_adi}** lot miktarını yazın:")
     bot.register_next_step_handler(msg, sihirbaz_lot_al)
 
 def sihirbaz_lot_al(message):
@@ -415,7 +403,7 @@ def sihirbaz_fiyat_ve_kaydet(message):
         conn.commit()
         conn.close()
         USER_STATE.pop(uid, None)
-        bot.send_message(message.chat.id, "✅ Alım Sihirbazı işlemi başarıyla veritabanına kaydetti!")
+        bot.send_message(message.chat.id, "✅ İşlem veritabanına başarıyla kaydoldu!")
     except: bot.send_message(message.chat.id, "❌ Hata.")
 
 def dinamik_lot_kaydet(message):
@@ -432,7 +420,7 @@ def dinamik_lot_kaydet(message):
         cursor.execute('INSERT OR REPLACE INTO portfoy_varliklari (varlik_adi, tip, ticker, lot, maliyet) VALUES (?,?,?,?,?)', (v_adi, tip_str, ticker_str, yeni_lot, yeni_maliyet))
         conn.commit()
         conn.close()
-        bot.send_message(message.chat.id, f"✅ {v_adi} sıfırlandı ve işlendi.")
+        bot.send_message(message.chat.id, f"✅ {v_adi} güncellendi.")
     except: bot.send_message(message.chat.id, "❌ Hata.")
 
 def alarm_kaydet(message):
@@ -449,7 +437,7 @@ def alarm_kaydet(message):
         cursor.execute("INSERT INTO alarmlar (varlik_adi, hedef_fiyat, yon) VALUES (?, ?, ?)", (v_adi, hedef, yon))
         conn.commit()
         conn.close()
-        bot.send_message(message.chat.id, "🚨 Alarm kuruldu.")
+        bot.send_message(message.chat.id, "🚨 Alarm başarıyla kuruldu.")
     except: pass
 
 def sabit_varlik_kaydet(message):
@@ -495,5 +483,5 @@ if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
     Thread(target=alarm_kontrol_dongusu).start()
-    print("👑 Grand Vault v4.0 Ultimate Yayında...")
+    print("👑 Grand Vault v4.1 Kurumsal Sürüm Hazır...")
     bot.infinity_polling()
