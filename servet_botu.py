@@ -12,7 +12,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 PREMIUM ELITE INTERACTIVE DASHBOARD (V3.6 GOLD EDITION)
+# # 7/24 PREMIUM ELITE INTERACTIVE DASHBOARD (V3.6.1 - HOTFIX)
 # -------------------------------------------------------------------------
 
 BOT_TOKEN = "8778250529:AAFu08dUsJNiV7YySGB7BFJzT93VmKtdeys"
@@ -25,7 +25,7 @@ USER_STATE = {}
 app = Flask('')
 @app.route('/')
 def home():
-    return "Premium Elite v3.6 Gold Edition Aktif"
+    return "Premium Elite v3.6.1 Sistem Aktif"
 
 V2_VARLIKLAR = {
     "ASELS": {"tip": "HISSE", "ticker": "ASELS.IS", "lot": 756, "maliyet": 116.11},
@@ -76,7 +76,6 @@ def veri_tabani_kur():
     
     cursor.execute("INSERT OR IGNORE INTO sabit_varliklar (varlik_adi, tl_degeri) VALUES ('BES', 0.0)")
     
-    # Fiziki altın türlerini sıfır adetle ilklendir
     for tur in ["GRAM", "CEYREK", "YARIM", "ATA"]:
         cursor.execute("INSERT OR IGNORE INTO fiziki_altinlar (altin_turu, adet) VALUES (?, 0.0)", (tur,))
     
@@ -110,6 +109,9 @@ def fiziki_altinlari_getir():
     return {row[0]: row[1] for row in rows}
 
 def canli_fiyat_cek(ticker, tip="HISSE"):
+    if ticker == "GC=F" and tip == "ALTIN_BORSASI":
+        return 64.00  # Altın S1 Sabit Kalibrasyonu
+        
     try:
         t = yf.Ticker(ticker)
         df = t.history(period="1d")
@@ -118,9 +120,7 @@ def canli_fiyat_cek(ticker, tip="HISSE"):
             if tip in ["ALTIN", "ALTIN_BORSASI"]:
                 usd_try = yf.Ticker("TRY=X").history(period="1d")['Close'].iloc[-1]
                 gram_altin = (kapanis / 31.1034768) * usd_try
-                if tip == "ALTIN_BORSASI":
-                    return round(gram_altin / 100, 2) # ALTIN.S1 borsa kalibrasyonu
-                return round(gram_altin, 2) # Saf Gram Altın fiyatı
+                return round(gram_altin, 2)
             return round(kapanis, 2)
     except:
         pass
@@ -168,18 +168,16 @@ def ana_menu_gonder(message):
     except:
         usd_kur, eur_kur = 33.0, 36.0
 
-    # Canlı Has Altın Fiyatını Çek (Ons altından hesaplama)
     canli_gram_altin = canli_fiyat_cek("GC=F", "ALTIN") or 2500.0
 
     toplam_borsa_tl = 0
     toplam_maliyet_tl = 0
-    rapor_metni = "👑 **PREMIUM ELITE KONSOLİDE SERVET RAPORU (v3.6)**\n\n"
+    rapor_metni = "👑 **PREMIUM ELITE KONSOLİDE SERVET RAPORU (v3.6.1)**\n\n"
     
     varliklar = varliklari_getir()
     isimler = []
     degerler = []
 
-    # 1. Borsa ve Altın Sertifikası Hesaplama
     for varlik, info in varliklar.items():
         if info["lot"] <= 0:
             continue
@@ -202,7 +200,6 @@ def ana_menu_gonder(message):
         isimler.append(varlik)
         degerler.append(mevcut_deger)
 
-    # 2. Fiziki Altın Sepeti Hesaplama
     f_altinlar = fiziki_altinlari_getir()
     toplam_fiziki_altin_tl = 0
     fiziki_detay = ""
@@ -324,7 +321,6 @@ def callback_izleyici(call):
         sim_metni += f"🚀 **İyimser / Boğa Senaryosu (+%30):**\n   Tahmini Değer: `{sim_iyimser:,.2f} TL`\n\n"
         bot.send_message(call.message.chat.id, sim_metni, parse_mode="Markdown")
 
-    # ---- INTERAKTIF BORSA ALIM SİHİRBAZI ----
     elif call.data == "sihirbaz_basla":
         bot.answer_callback_query(call.id)
         markup = InlineKeyboardMarkup()
@@ -344,7 +340,6 @@ def callback_izleyici(call):
             msg = bot.send_message(call.message.chat.id, f"📦 **{secilen}** için kaç lot aldınız? Sadece rakam girin:")
             bot.register_next_step_handler(msg, sihirbaz_lot_al)
 
-    # ---- INTERAKTIF FIZIKI ALTIN MENÜSÜ ----
     elif call.data == "fiziki_altin_menu":
         bot.answer_callback_query(call.id)
         markup = InlineKeyboardMarkup()
@@ -357,7 +352,7 @@ def callback_izleyici(call):
         tur = call.data.replace("set_gold_", "")
         USER_STATE[call.from_user.id] = {"altin_turu": tur}
         tur_isimler = {"GRAM": "Gram Altın (Toplam Gram)", "CEYREK": "Çeyrek Altın (Toplam Adet)", "YARIM": "Yarım Altın (Toplam Adet)", "ATA": "Ata Altın (Toplam Adet)"}
-        msg = bot.send_message(call.message.chat.id, f"📝 Elinizdeki güncel toplam **{tur_isimler[tur]}** miktarını yazın:\n*(Not: Eski adet silinecek ve yazdığınız yeni adet kaydedilecektir)*")
+        msg = bot.send_message(call.message.chat.id, f"📝 Elinizdeki güncel toplam **{tur_isimler[tur]}** miktarını yazın:\n*(Not: Yazdığınız adet güncel adet olarak kaydedilecektir)*")
         bot.register_next_step_handler(msg, fiziki_altin_kaydet)
 
 def fiziki_altin_kaydet(message):
@@ -507,9 +502,9 @@ def alarm_kontrol_dongusu():
                         guncel = canli_fiyat_cek(varliklar[v_adi]["ticker"], varliklar[v_adi]["tip"])
                         if guncel:
                             tetiklendi = False
-                            if yon == "YUKARI" and guncel >= target:
+                            if yon == "YUKARI" and guncel >= hedef:
                                 tetiklendi = True
-                            elif yon == "ASAGI" and guncel <= target:
+                            elif yon == "ASAGI" and guncel <= hedef:
                                 tetiklendi = True
                                 
                             if tetiklendi:
@@ -528,5 +523,5 @@ if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
     Thread(target=alarm_kontrol_dongusu).start()
-    print("👑 Premium Elite v3.6 Gold Edition Yayında...")
+    print("👑 Premium Elite v3.6.1 Tam Sürüm Yayında...")
     bot.infinity_polling()
