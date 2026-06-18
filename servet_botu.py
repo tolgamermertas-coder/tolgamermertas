@@ -12,10 +12,10 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 GRAND VAULT DASHBOARD (V4.1 - STABİL KURUMSAL SÜRÜM)
+# # 7/24 GRAND VAULT DASHBOARD (V5.0 - NİHAİ INTERAKTİF SÜRÜM)
 # -------------------------------------------------------------------------
 
-BOT_TOKEN = "8778250529:AAFu08dUsJNiV7YySGB7BFJzT93VmKtdeys"
+BOT_TOKEN = "8561394116:AAF9ygCDxUyxriEObsv_WhbOviTjIiU2FLa4"
 YETKILI_USER_ID = 7796185729
 bot = telebot.TeleBot(BOT_TOKEN)
 DB_FILE = "wealth_management.db"
@@ -25,16 +25,17 @@ USER_STATE = {}
 app = Flask('')
 @app.route('/')
 def home():
-    return "Grand Vault v4.1 Kesintisiz Yayında"
+    return "Grand Vault v5.0 Ultimate Aktif"
 
+# Kurumsal Kimlik ve Başlangıç Varlıkları
 V2_VARLIKLAR = {
     "ASELS": {"tip": "HISSE", "ticker": "ASELS.IS", "lot": 756, "maliyet": 116.11, "logo": "🛡️ 𝗔𝗦𝗘𝗟𝗦"},
     "TUPRS": {"tip": "HISSE", "ticker": "TUPRS.IS", "lot": 152, "maliyet": 168.10, "logo": "🛢️ 𝗧𝗨𝗣𝗥𝗦"},
     "ENJSA": {"tip": "HISSE", "ticker": "ENJSA.IS", "lot": 260, "maliyet": 108.60, "logo": "⚡ 𝗘𝗡𝗝𝗦𝗔"},
     "EREGL": {"tip": "HISSE", "ticker": "EREGL.IS", "lot": 354, "maliyet": 24.64,  "logo": "🏗️ 𝗘𝗥𝗘𝗚𝗟"},
     "SISE":  {"tip": "HISSE", "ticker": "SISE.IS",  "lot": 338, "maliyet": 53.76,  "logo": "🥛 𝗦𝗜𝗦𝗘"},
-    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔verify𝗟𝗧𝗜𝗡.𝗦𝟭"},
-    "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 𝗚Layout𝗿𝗮𝗺 𝗔𝗹𝘁ı𝗻"},
+    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔\u200b𝗟𝗧𝗜𝗡.𝗦𝟭"},
+    "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 𝗚𝗿𝗮𝗺 𝗔𝗹𝘁ı𝗻"},
     "CEYREK_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🪙 𝗖̧𝗲𝘆𝗿𝗲𝗸 𝗔𝗹𝘁ı𝗻"},
     "YARIM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🌗 𝗬𝗮𝗿ı𝗺 𝗔𝗹𝘁ı𝗻"},
     "ATA_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "👑 𝗔𝘁𝗮 𝗔𝗹𝘁ı𝗻"}
@@ -117,7 +118,7 @@ def canli_fiyat_cek(ticker, tip="HISSE", varlik_adi=""):
         if not df.empty:
             kapanis = df['Close'].iloc[-1]
             if tip in ["ALTIN", "ALTIN_BORSASI", "FIZIKI_ALTIN"]:
-                usd_try = 34.20
+                usd_try = 34.30
                 try:
                     usd_df = yf.Ticker("TRY=X").history(period="1d")
                     if not usd_df.empty: usd_try = usd_df['Close'].iloc[-1]
@@ -148,7 +149,7 @@ def rapor_butonlari_olustur():
         InlineKeyboardButton("🎯 Eylül Simülasyonu", callback_data="eylul_simule")
     )
     markup.row(
-        InlineKeyboardButton("🔄 Portföy Sıfırla", callback_data="lot_duzenle_menu"),
+        InlineKeyboardButton("🔄 Portföy Sıfırla/Düzenle", callback_data="lot_duzenle_menu"),
         InlineKeyboardButton("🛡️ BES Güncelle", callback_data="sabit_guncelle")
     )
     markup.row(InlineKeyboardButton("🔄 Dashboard Yenile", callback_data="yenile_ana"))
@@ -158,7 +159,7 @@ def rapor_butonlari_olustur():
 def ana_menu_gonder(message):
     if not guvenlik_kontrolu(message.from_user.id): return
     
-    msg = bot.send_message(message.chat.id, "🏛️ Borsa İstanbul ve Darphane Hatları Senkronize Ediliyor...")
+    msg = bot.send_message(message.chat.id, "🏛️ Borsa İstanbul ve Darphane Verileri Çekiliyor...")
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -247,7 +248,7 @@ def ana_menu_gonder(message):
     nihai_rapor += "👑 ==============================\n"
     nihai_rapor += f"🛡️ **Bireysel Emeklilik (BES):** {bes_degeri:,.2f} TL\n"
     nihai_rapor += f"💎 **BÜTÜN SERVETİMİN TOPLAMI:** {net_servet:,.2f} TL\n"
-    nihai_rapor += f"{genel_emoji} **BIST Net K/Z Oranı:** {genel_emoji} {toplam_kz_yuzde:+.2f}% ({toplam_borsa_kz:,.2f} TL)\n"
+    nihai_rapor += f"{genel_emoji} **BIST Net K/Z Oranı:** {toplam_kz_yuzde:+.2f}% ({toplam_borsa_kz:,.2f} TL)\n"
     nihai_rapor += f"ℹ️ *USD: {usd_kur:.2f} TL | EUR: {eur_kur:.2f} TL | Has Altın/Gr: {canli_gram_altin:.2f} TL*"
 
     try: bot.delete_message(message.chat.id, msg.message_id)
@@ -255,7 +256,9 @@ def ana_menu_gonder(message):
 
     if degerler:
         plt.figure(figsize=(6,6))
-        plt.pie(degerler, labels=isimler, autopct='%1.1f%%', startangle=140)
+        # Grafik için temiz isimler (Emojisiz)
+        temiz_isimler = [n.replace("🛡️ ", "").replace("🛢️ ", "").replace("⚡ ", "").replace("🏗️ ", "").replace("🥛 ", "").replace("📜 ", "") for n in isimler]
+        plt.pie(degerler, labels=temiz_isimler, autopct='%1.1f%%', startangle=140)
         plt.title("GRAND VAULT GLOBAL VARLIK DAĞILIMI", fontsize=11, fontweight='bold')
         buf = io.BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
@@ -282,9 +285,7 @@ def callback_izleyici(call):
         if not e_df.empty: eur_kur = e_df['Close'].iloc[-1]
     except: pass
 
-    canli_gram_altin = canli_fiyat_cek("GC=F", "ALTIN") or 2520.0
     varliklar = varliklari_getir()
-    
     toplam_portfoy_tl = 0
     for varlik, info in varliklar.items():
         guncel_fiyat = canli_fiyat_cek(info["ticker"], info["tip"], varlik) or info["maliyet"]
@@ -398,6 +399,7 @@ def sihirbaz_fiyat_ve_kaydet(message):
             tip_str = "FIZIKI_ALTIN" if "ALTIN" in hisse and hisse != "ALTIN.S1" else ("ALTIN_BORSASI" if hisse == "ALTIN.S1" else "HISSE")
             ticker_str = "GC=F" if "ALTIN" in hisse else f"{hisse}.IS"
         conn = sqlite3.connect(DB_FILE)
+        cursor = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute('INSERT OR REPLACE INTO portfoy_varliklari (varlik_adi, tip, ticker, lot, maliyet) VALUES (?,?,?,?,?)', (hisse, tip_str, ticker_str, toplam_lot, yeni_maliyet))
         conn.commit()
@@ -483,5 +485,5 @@ if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
     Thread(target=alarm_kontrol_dongusu).start()
-    print("👑 Grand Vault v4.1 Kurumsal Sürüm Hazır...")
+    print("👑 Grand Vault v5.0 Kurumsal Sürüm Hazır...")
     bot.infinity_polling()
