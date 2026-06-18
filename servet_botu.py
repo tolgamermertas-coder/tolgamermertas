@@ -12,7 +12,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 PREMIUM GRAND VAULT DASHBOARD (V5.2 - KUSURSUZ BÖLÜNMÜŞ MİMARİ)
+# # 7/24 GRAND VAULT DASHBOARD (V5.3 - DOĞRULANMIŞ TOKEN SÜRÜMÜ)
 # -------------------------------------------------------------------------
 
 BOT_TOKEN = "8561394116:AAF9ygCDxUyxriEObsv_WhbOviTjIiU2FLa4"
@@ -25,16 +25,15 @@ USER_STATE = {}
 app = Flask('')
 @app.route('/')
 def home():
-    return "Grand Vault v5.2 Nihai Sistem Aktif"
+    return "Grand Vault v5.3 Sistem Aktif"
 
-# Kurumsal Kimlik, Emojiler ve Başlangıç Varlıkları
 V2_VARLIKLAR = {
     "ASELS": {"tip": "HISSE", "ticker": "ASELS.IS", "lot": 756, "maliyet": 116.11, "logo": "🛡️ 𝗔𝗦𝗘𝗟𝗦"},
     "TUPRS": {"tip": "HISSE", "ticker": "TUPRS.IS", "lot": 152, "maliyet": 168.10, "logo": "🛢️ 𝗧𝗨𝗣𝗥𝗦"},
     "ENJSA": {"tip": "HISSE", "ticker": "ENJSA.IS", "lot": 260, "maliyet": 108.60, "logo": "⚡ 𝗘𝗡𝗝𝗦𝗔"},
     "EREGL": {"tip": "HISSE", "ticker": "EREGL.IS", "lot": 354, "maliyet": 24.64,  "logo": "🏗️ 𝗘𝗥𝗘𝗚𝗟"},
     "SISE":  {"tip": "HISSE", "ticker": "SISE.IS",  "lot": 338, "maliyet": 53.76,  "logo": "🥛 𝗦𝗜𝗦𝗘"},
-    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔𝗟𝗧folder𝗜𝗡.𝗦𝟭"},
+    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔𝗟𝗧𝗜𝗡.𝗦𝟭"},
     "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 𝗚𝗿𝗮𝗺 𝗔𝗹𝘁ı𝗻"},
     "CEYREK_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🪙 𝗖̧𝗲𝘆𝗿𝗲𝗸 𝗔𝗹𝘁ı𝗻"},
     "YARIM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🌗 𝗬𝗮𝗿ı𝗺 𝗔𝗹𝘁ı𝗻"},
@@ -178,7 +177,7 @@ def ana_menu_gonder(message):
     canli_gram_altin = canli_fiyat_cek("GC=F", "ALTIN") or 2520.0
 
     hisse_metni = "🏛️ **BORSA İSTANBUL (BIST) DASHBOARD**\n────────────────────\n"
-    altin_metni = "\n✨ **DARPHANE & ALTIN SEPETI DASHBOARD**\n────────────────────\n"
+    altin_metni = "\n✨ **DARPHANE & ALTIN SEPETİ DASHBOARD**\n────────────────────\n"
     
     toplam_hisse_tl = 0
     toplam_altin_tl = 0
@@ -482,5 +481,5 @@ if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
     Thread(target=alarm_kontrol_dongusu).start()
-    print("👑 Grand Vault v5.2 Nihai Sürüm Hazır...")
+    print("👑 Grand Vault v5.3 Kurumsal Sürüm Hazır...")
     bot.infinity_polling()
