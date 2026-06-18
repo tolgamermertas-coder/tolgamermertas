@@ -12,7 +12,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 PREMIUM ELITE INTERACTIVE DASHBOARD (V3.6.1 - HOTFIX)
+# # 7/24 PREMIUM ELITE INTERACTIVE DASHBOARD (V3.7 GLOBAL VAULT EDITION)
 # -------------------------------------------------------------------------
 
 BOT_TOKEN = "8778250529:AAFu08dUsJNiV7YySGB7BFJzT93VmKtdeys"
@@ -25,7 +25,7 @@ USER_STATE = {}
 app = Flask('')
 @app.route('/')
 def home():
-    return "Premium Elite v3.6.1 Sistem Aktif"
+    return "Premium Elite v3.7 Global Vault Yayında"
 
 V2_VARLIKLAR = {
     "ASELS": {"tip": "HISSE", "ticker": "ASELS.IS", "lot": 756, "maliyet": 116.11},
@@ -65,6 +65,12 @@ def veri_tabani_kur():
         )
     ''')
     cursor.execute('''
+        CREATE TABLE IF NOT EXISTS doviz_kasasi (
+            doviz_turu TEXT PRIMARY KEY,
+            miktar REAL
+        )
+    ''')
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS alarmlar (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             varlik_adi TEXT,
@@ -78,6 +84,9 @@ def veri_tabani_kur():
     
     for tur in ["GRAM", "CEYREK", "YARIM", "ATA"]:
         cursor.execute("INSERT OR IGNORE INTO fiziki_altinlar (altin_turu, adet) VALUES (?, 0.0)", (tur,))
+        
+    for doviz in ["USD", "EUR"]:
+        cursor.execute("INSERT OR IGNORE INTO doviz_kasasi (doviz_turu, miktar) VALUES (?, 0.0)", (doviz,))
     
     for k, v in V2_VARLIKLAR.items():
         cursor.execute('''
@@ -94,11 +103,7 @@ def varliklari_getir():
     cursor.execute("SELECT varlik_adi, tip, ticker, lot, maliyet FROM portfoy_varliklari")
     rows = cursor.fetchall()
     conn.close()
-    
-    varliklar = {}
-    for row in rows:
-        varliklar[row[0]] = {"tip": row[1], "ticker": row[2], "lot": row[3], "maliyet": row[4]}
-    return varliklar
+    return {row[0]: {"tip": row[1], "ticker": row[2], "lot": row[3], "maliyet": row[4]} for row in rows}
 
 def fiziki_altinlari_getir():
     conn = sqlite3.connect(DB_FILE)
@@ -108,9 +113,17 @@ def fiziki_altinlari_getir():
     conn.close()
     return {row[0]: row[1] for row in rows}
 
+def doviz_kasasini_getir():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT doviz_turu, miktar FROM doviz_kasasi")
+    rows = cursor.fetchall()
+    conn.close()
+    return {row[0]: row[1] for row in rows}
+
 def canli_fiyat_cek(ticker, tip="HISSE"):
     if ticker == "GC=F" and tip == "ALTIN_BORSASI":
-        return 64.00  # Altın S1 Sabit Kalibrasyonu
+        return 64.00
         
     try:
         t = yf.Ticker(ticker)
@@ -133,20 +146,18 @@ def rapor_butonlari_olustur():
         InlineKeyboardButton("💶 EUR Rapor", callback_data="rapor_eur")
     )
     markup.row(
-        InlineKeyboardButton("🛒 Aylık Düzenli Alım Ekle", callback_data="sihirbaz_basla"),
+        InlineKeyboardButton("🛒 Aylık Hisse Ekle", callback_data="sihirbaz_basla"),
         InlineKeyboardButton("🏅 Fiziki Altın Sepetim", callback_data="fiziki_altin_menu")
     )
     markup.row(
-        InlineKeyboardButton("🚨 Fiyat Alarmı Kur", callback_data="alarm_kur_menu"),
-        InlineKeyboardButton("🎯 Eylül Simülasyonu", callback_data="eylul_simule")
+        InlineKeyboardButton("💵 Döviz Kasasını Güncelle", callback_data="doviz_kasasi_menu"),
+        InlineKeyboardButton("🚨 Fiyat Alarmı Kur", callback_data="alarm_kur_menu")
     )
     markup.row(
-        InlineKeyboardButton("🔄 Portföy Sıfırla", callback_data="lot_duzenle_menu"),
+        InlineKeyboardButton("🎯 Eylül Simülasyonu", callback_data="eylul_simule"),
         InlineKeyboardButton("🛡️ BES Güncelle", callback_data="sabit_guncelle")
     )
-    markup.row(
-        InlineKeyboardButton("🔄 Dashboard Yenile", callback_data="yenile_ana")
-    )
+    markup.row(InlineKeyboardButton("🔄 Dashboard Yenile", callback_data="yenile_ana"))
     return markup
 
 @bot.message_handler(commands=['start', 'menu'])
@@ -154,7 +165,7 @@ def ana_menu_gonder(message):
     if not guvenlik_kontrolu(message.from_user.id):
         return
     
-    msg = bot.send_message(message.chat.id, "🔄 Canlı piyasa ve altın verileri çekiliyor, Dashboard hazırlanıyor...")
+    msg = bot.send_message(message.chat.id, "🔄 Canlı piyasa verileri, altın ve döviz kurları çekiliyor...")
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -172,12 +183,13 @@ def ana_menu_gonder(message):
 
     toplam_borsa_tl = 0
     toplam_maliyet_tl = 0
-    rapor_metni = "👑 **PREMIUM ELITE KONSOLİDE SERVET RAPORU (v3.6.1)**\n\n"
+    rapor_metni = "👑 **PREMIUM ELITE GLOBAL DASHBOARD (v3.7)**\n\n"
     
     varliklar = varliklari_getir()
     isimler = []
     degerler = []
 
+    # 1. Hisse ve Borsa Altını
     for varlik, info in varliklar.items():
         if info["lot"] <= 0:
             continue
@@ -200,10 +212,10 @@ def ana_menu_gonder(message):
         isimler.append(varlik)
         degerler.append(mevcut_deger)
 
+    # 2. Fiziki Altın Sepeti
     f_altinlar = fiziki_altinlari_getir()
     toplam_fiziki_altin_tl = 0
     fiziki_detay = ""
-    
     carpanlar = {"GRAM": 1.0, "CEYREK": 1.605, "YARIM": 3.21, "ATA": 6.61}
     tur_isimleri = {"GRAM": "Gram Altın", "CEYREK": "Çeyrek Altın", "YARIM": "Yarım Altın", "ATA": "Ata Altın"}
     
@@ -218,11 +230,34 @@ def ana_menu_gonder(message):
         isimler.append("Fiziki Altın")
         degerler.append(toplam_fiziki_altin_tl)
 
+    # 3. Nakit Döviz Kasası
+    kasa = doviz_kasasini_getir()
+    toplam_doviz_tl = 0
+    doviz_detay = ""
+    
+    if kasa["USD"] > 0:
+        usd_tl_karislik = kasa["USD"] * usd_kur
+        toplam_doviz_tl += usd_tl_karislik
+        doviz_detay += f"   • {kasa['USD']:,.2f} USD: {usd_tl_karislik:,.2f} TL\n"
+    if kasa["EUR"] > 0:
+        eur_tl_karislik = kasa["EUR"] * eur_kur
+        toplam_doviz_tl += eur_tl_karislik
+        doviz_detay += f"   • {kasa['EUR']:,.2f} EUR: {eur_tl_karislik:,.2f} TL\n"
+        
+    if toplam_doviz_tl > 0:
+        rapor_metni += f"💵 **Nakit Döviz Kasası:** {toplam_doviz_tl:,.2f} TL\n{doviz_detay}\n"
+        if kasa["USD"] > 0:
+            isimler.append("Nakit USD")
+            degerler.append(kasa["USD"] * usd_kur)
+        if kasa["EUR"] > 0:
+            isimler.append("Nakit EUR")
+            degerler.append(kasa["EUR"] * eur_kur)
+
     if bes_degeri > 0:
         isimler.append("BES")
         degerler.append(bes_degeri)
 
-    net_servet = toplam_borsa_tl + toplam_fiziki_altin_tl + bes_degeri
+    net_servet = toplam_borsa_tl + toplam_fiziki_altin_tl + toplam_doviz_tl + bes_degeri
     toplam_kar_zarar = toplam_borsa_tl - toplam_maliyet_tl
     toplam_kz_yuzde = (toplam_kar_zarar / toplam_maliyet_tl) * 100 if toplam_maliyet_tl > 0 else 0
     genel_emoji = "🚀" if toplam_kar_zarar >= 0 else "📉"
@@ -232,20 +267,18 @@ def ana_menu_gonder(message):
     rapor_metni += f"🛡️ **BES Birikimi:** {bes_degeri:,.2f} TL\n"
     rapor_metni += f"💰 **Net Servet Değeri:** {net_servet:,.2f} TL\n"
     rapor_metni += f"{genel_emoji} **Toplam Borsa K/Z Oranı:** {genel_isaret}{toplam_kz_yuzde:.2f}% ({toplam_kar_zarar:,.2f} TL)\n"
-    rapor_metni += f"ℹ️ *Has Altın/Gr: {canli_gram_altin:.2f} TL | Dolar: {usd_kur:.2f} TL*"
+    rapor_metni += f"ℹ️ *Ounces Altın: {canli_gram_altin:.2f} TL | USD: {usd_kur:.2f} TL | EUR: {eur_kur:.2f} TL*"
 
     bot.delete_message(message.chat.id, msg.message_id)
 
     if degerler:
         plt.figure(figsize=(6,6))
         plt.pie(degerler, labels=isimler, autopct='%1.1f%%', startangle=140)
-        plt.title("Premium Elite Varlık Dağılımı", fontsize=14, fontweight='bold')
-        
+        plt.title("Premium Elite Küresel Varlık Dağılımı", fontsize=14, fontweight='bold')
         buf = io.BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
         plt.close()
-        
         bot.send_photo(message.chat.id, buf, caption=rapor_metni, parse_mode="Markdown", reply_markup=rapor_butonlari_olustur())
     else:
         bot.send_message(message.chat.id, rapor_metni, parse_mode="Markdown", reply_markup=rapor_butonlari_olustur())
@@ -268,8 +301,8 @@ def callback_izleyici(call):
         usd_kur, eur_kur = 33.0, 36.0
 
     canli_gram_altin = canli_fiyat_cek("GC=F", "ALTIN") or 2500.0
-
     varliklar = varliklari_getir()
+    
     toplam_borsa_tl = 0
     for varlik, info in varliklar.items():
         guncel_fiyat = canli_fiyat_cek(info["ticker"], info["tip"]) or info["maliyet"]
@@ -281,7 +314,10 @@ def callback_izleyici(call):
     for tur, adet in f_altinlar.items():
         toplam_fiziki_altin_tl += adet * carpanlar[tur] * canli_gram_altin
 
-    net_servet_tl = toplam_borsa_tl + toplam_fiziki_altin_tl + bes_degeri
+    kasa = doviz_kasasini_getir()
+    toplam_doviz_tl = (kasa["USD"] * usd_kur) + (kasa["EUR"] * eur_kur)
+
+    net_servet_tl = toplam_borsa_tl + toplam_fiziki_altin_tl + toplam_doviz_tl + bes_degeri
 
     if call.data == "yenile_ana":
         bot.answer_callback_query(call.id, "🔄 Güncelleniyor...")
@@ -345,33 +381,61 @@ def callback_izleyici(call):
         markup = InlineKeyboardMarkup()
         markup.row(InlineKeyboardButton("🏅 Gram Altın", callback_data="set_gold_GRAM"), InlineKeyboardButton("🪙 Çeyrek Altın", callback_data="set_gold_CEYREK"))
         markup.row(InlineKeyboardButton("🌗 Yarım Altın", callback_data="set_gold_YARIM"), InlineKeyboardButton("👑 Ata Altın", callback_data="set_gold_ATA"))
-        bot.send_message(call.message.chat.id, "🏅 **Fiziki Altın Güncelleme Paneli**\n\nHangi altın türünün toplam adetini düzenlemek istiyorsunuz? Lütfen seçin:", reply_markup=markup)
+        bot.send_message(call.message.chat.id, "🏅 **Fiziki Altın Güncelleme Paneli**\n\nHangi altın türünün toplam adetini düzenlemek istiyorsunuz?", reply_markup=markup)
 
     elif call.data.startswith("set_gold_"):
         bot.answer_callback_query(call.id)
         tur = call.data.replace("set_gold_", "")
         USER_STATE[call.from_user.id] = {"altin_turu": tur}
-        tur_isimler = {"GRAM": "Gram Altın (Toplam Gram)", "CEYREK": "Çeyrek Altın (Toplam Adet)", "YARIM": "Yarım Altın (Toplam Adet)", "ATA": "Ata Altın (Toplam Adet)"}
-        msg = bot.send_message(call.message.chat.id, f"📝 Elinizdeki güncel toplam **{tur_isimler[tur]}** miktarını yazın:\n*(Not: Yazdığınız adet güncel adet olarak kaydedilecektir)*")
+        tur_isimler = {"GRAM": "Gram Altın", "CEYREK": "Çeyrek Altın", "YARIM": "Yarım Altın", "ATA": "Ata Altın"}
+        msg = bot.send_message(call.message.chat.id, f"📝 Elinizdeki güncel toplam **{tur_isimler[tur]}** miktarını sadece rakam olarak yazın:")
         bot.register_next_step_handler(msg, fiziki_altin_kaydet)
+
+    # ---- DÖVİZ KASASI ADIMLARI ----
+    elif call.data == "doviz_kasasi_menu":
+        bot.answer_callback_query(call.id)
+        markup = InlineKeyboardMarkup()
+        markup.row(InlineKeyboardButton("💵 Nakit Dolar (USD)", callback_data="set_curr_USD"), InlineKeyboardButton("💶 Nakit Euro (EUR)", callback_data="set_curr_EUR"))
+        bot.send_message(call.message.chat.id, "💵 **Küresel Nakit Kasası Yönetimi**\n\nHangi döviz kasanızı güncellemek istiyorsunuz?", reply_markup=markup)
+
+    elif call.data.startswith("set_curr_"):
+        bot.answer_callback_query(call.id)
+        curr = call.data.replace("set_curr_", "")
+        USER_STATE[call.from_user.id] = {"doviz_turu": curr}
+        msg = bot.send_message(call.message.chat.id, f"📝 Kasada duran güncel toplam **{curr}** miktarınızı sadece rakam olarak yazıp gönderin:")
+        bot.register_next_step_handler(msg, doviz_kasasi_kaydet)
+
+def doviz_kasasi_kaydet(message):
+    try:
+        uid = message.from_user.id
+        miktar = float(message.text.strip())
+        doviz = USER_STATE[uid]["doviz_turu"]
+        
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE doviz_kasasi SET miktar=? WHERE doviz_turu=?", (miktar, doviz))
+        conn.commit()
+        conn.close()
+        
+        USER_STATE.pop(uid, None)
+        bot.send_message(message.chat.id, f"✅ **Kasa Güncellendi!**\n\n💵 Döviz: {doviz}\n📊 Yeni Toplam Nakit: **{miktar:,.2f} {doviz}**\n\nDashboard için /menu yazabilirsiniz.")
+    except:
+        bot.send_message(message.chat.id, "❌ Hatalı giriş. Lütfen sadece rakam yazın.")
 
 def fiziki_altin_kaydet(message):
     try:
         uid = message.from_user.id
         yeni_adet = float(message.text.strip())
         tur = USER_STATE[uid]["altin_turu"]
-        
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute("UPDATE fiziki_altinlar SET adet=? WHERE altin_turu=?", (yeni_adet, tur))
         conn.commit()
         conn.close()
-        
         USER_STATE.pop(uid, None)
-        tur_isimler = {"GRAM": "Gram Altın", "CEYREK": "Çeyrek Altın", "YARIM": "Yarım Altın", "ATA": "Ata Altın"}
-        bot.send_message(message.chat.id, f"✅ **Altın Sepeti Güncellendi!**\n\n🏅 Tür: {tur_isimler[tur]}\n📊 Yeni Toplam Miktar: **{yeni_adet:.2f}**\n\nDashboard'u görmek için /menu yazabilirsiniz.")
+        bot.send_message(message.chat.id, f"✅ Altın başarıyla güncellendi.")
     except:
-        bot.send_message(message.chat.id, "❌ Hatalı adet girişi. Lütfen sadece rakam girin.")
+        bot.send_message(message.chat.id, "❌ Sadece rakam girin.")
 
 def yeni_stok_adi_al(message):
     hisse_adi = message.text.strip().upper()
@@ -388,7 +452,7 @@ def sihirbaz_lot_al(message):
         msg = bot.send_message(message.chat.id, f"💵 **{h_adi}** için lot başına alım fiyatınız (TL):")
         bot.register_next_step_handler(msg, sihirbaz_fiyat_ve_kaydet)
     except:
-        bot.send_message(message.chat.id, "❌ Hatalı giriş. Lütfen sadece rakam yazın.")
+        bot.send_message(message.chat.id, "❌ Rakam giriniz.")
 
 def sihirbaz_fiyat_ve_kaydet(message):
     try:
@@ -396,7 +460,6 @@ def sihirbaz_fiyat_ve_kaydet(message):
         fiyat = float(message.text.strip())
         hisse = USER_STATE[uid]["hisse"]
         eklenen_lot = USER_STATE[uid]["lot"]
-        
         varliklar = varliklari_getir()
         
         if hisse in varliklar and "is_new" not in USER_STATE[uid]:
@@ -421,11 +484,10 @@ def sihirbaz_fiyat_ve_kaydet(message):
         ''', (hisse, tip_str, ticker_str, toplam_lot, yeni_maliyet))
         conn.commit()
         conn.close()
-        
         USER_STATE.pop(uid, None)
-        bot.send_message(message.chat.id, f"✅ **Alım Kaydedildi!**\n\n🔹 Varlık: {hisse}\n📦 Yeni Toplam: **{toplam_lot:.2f} Lot**\n🧮 Yeni Maliyet: **{yeni_maliyet:.2f} TL**")
+        bot.send_message(message.chat.id, f"✅ Alım Kaydedildi!")
     except:
-        bot.send_message(message.chat.id, "❌ Giriş hatası oluştu.")
+        bot.send_message(message.chat.id, "❌ Hata oluştu.")
 
 def dinamik_lot_kaydet(message):
     try:
@@ -433,11 +495,9 @@ def dinamik_lot_kaydet(message):
         v_adi = parcalar[0].upper()
         yeni_lot = float(parcalar[1])
         yeni_maliyet = float(parcalar[2])
-        
         varliklar = varliklari_getir()
         tip_str = varliklar[v_adi]["tip"] if v_adi in varliklar else "HISSE"
         ticker_str = varliklar[v_adi]["ticker"] if v_adi in varliklar else f"{v_adi}.IS"
-
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute('''
@@ -447,32 +507,26 @@ def dinamik_lot_kaydet(message):
         ''', (v_adi, tip_str, ticker_str, yeni_lot, yeni_maliyet))
         conn.commit()
         conn.close()
-        bot.send_message(message.chat.id, f"✅ **{v_adi}** güncellendi!")
+        bot.send_message(message.chat.id, f"✅ Güncelleniyor...")
     except:
-        bot.send_message(message.chat.id, "❌ Hatalı biçim.")
+        bot.send_message(message.chat.id, "❌ Hata.")
 
 def alarm_kaydet(message):
     try:
         parcalar = message.text.strip().split()
         v_adi = parcalar[0].upper()
         hedef = float(parcalar[1])
-        
         varliklar = varliklari_getir()
-        if v_adi not in varliklar:
-            bot.send_message(message.chat.id, "❌ Varlık bulunamadı.")
-            return
-            
+        if v_adi not in varliklar: return
         guncel = canli_fiyat_cek(varliklar[v_adi]["ticker"], varliklar[v_adi]["tip"]) or varliklar[v_adi]["maliyet"]
         yon = "YUKARI" if hedef > guncel else "ASAGI"
-        
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute("INSERT INTO alarmlar (varlik_adi, hedef_fiyat, yon) VALUES (?, ?, ?)", (v_adi, hedef, yon))
         conn.commit()
         conn.close()
-        bot.send_message(message.chat.id, f"🚨 Alarm kuruldu!")
-    except:
-        bot.send_message(message.chat.id, "❌ Hatalı biçim.")
+        bot.send_message(message.chat.id, f"🚨 Alarm devrede.")
+    except: pass
 
 def sabit_varlik_kaydet(message):
     try:
@@ -482,18 +536,18 @@ def sabit_varlik_kaydet(message):
         cursor.execute("UPDATE sabit_varliklar SET tl_degeri=? WHERE varlik_adi='BES'", (yeni_deger,))
         conn.commit()
         conn.close()
-        bot.send_message(message.chat.id, f"✅ BES güncellendi.")
-    except:
-        bot.send_message(message.chat.id, "❌ Geçersiz rakam.")
+        bot.send_message(message.chat.id, f"✅ BES Güncellendi.")
+    except: pass
 
 def alarm_kontrol_dongusu():
     while True:
         try:
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
+            cursor.execute("SELECT id, varlik_adi, gateway_fiyat, yon FROM alarmlar WHERE aktif=1")
+            # Değişken kalibrasyonu
             cursor.execute("SELECT id, varlik_adi, hedef_fiyat, yon FROM alarmlar WHERE aktif=1")
             aktif_alarmlar = cursor.fetchall()
-            
             if aktif_alarmlar:
                 varliklar = varliklari_getir()
                 for al in aktif_alarmlar:
@@ -502,18 +556,14 @@ def alarm_kontrol_dongusu():
                         guncel = canli_fiyat_cek(varliklar[v_adi]["ticker"], varliklar[v_adi]["tip"])
                         if guncel:
                             tetiklendi = False
-                            if yon == "YUKARI" and guncel >= hedef:
-                                tetiklendi = True
-                            elif yon == "ASAGI" and guncel <= hedef:
-                                tetiklendi = True
-                                
+                            if yon == "YUKARI" and guncel >= hedef: tetiklendi = True
+                            elif yon == "ASAGI" and guncel <= hedef: tetiklendi = True
                             if tetiklendi:
                                 bot.send_message(YETKILI_USER_ID, f"🚨🔔 **{v_adi}** hedefiniz ({hedef:.2f} TL) kırıldı!")
                                 cursor.execute("UPDATE alarmlar SET aktif=0 WHERE id=?", (al_id,))
             conn.commit()
             conn.close()
-        except:
-            pass
+        except: pass
         time.sleep(60)
 
 def sunucu_calistir():
@@ -523,5 +573,5 @@ if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
     Thread(target=alarm_kontrol_dongusu).start()
-    print("👑 Premium Elite v3.6.1 Tam Sürüm Yayında...")
+    print("👑 Premium Elite v3.7 Global Vault Yayında...")
     bot.infinity_polling()
