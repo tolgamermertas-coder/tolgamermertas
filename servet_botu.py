@@ -12,7 +12,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 GRAND VAULT DASHBOARD (V5.3 - DOĞRULANMIŞ TOKEN SÜRÜMÜ)
+# # 7/24 GRAND VAULT DASHBOARD (V5.5 - VERİTABANI VE KARAKTER KALİBRASYONU)
 # -------------------------------------------------------------------------
 
 BOT_TOKEN = "8561394116:AAF9ygCDxUyxriEObsv_WhbOviTjIiU2FLa4"
@@ -25,7 +25,7 @@ USER_STATE = {}
 app = Flask('')
 @app.route('/')
 def home():
-    return "Grand Vault v5.3 Sistem Aktif"
+    return "Grand Vault v5.5 Aktif"
 
 V2_VARLIKLAR = {
     "ASELS": {"tip": "HISSE", "ticker": "ASELS.IS", "lot": 756, "maliyet": 116.11, "logo": "🛡️ 𝗔𝗦𝗘𝗟𝗦"},
@@ -33,11 +33,11 @@ V2_VARLIKLAR = {
     "ENJSA": {"tip": "HISSE", "ticker": "ENJSA.IS", "lot": 260, "maliyet": 108.60, "logo": "⚡ 𝗘𝗡𝗝𝗦𝗔"},
     "EREGL": {"tip": "HISSE", "ticker": "EREGL.IS", "lot": 354, "maliyet": 24.64,  "logo": "🏗️ 𝗘𝗥𝗘𝗚𝗟"},
     "SISE":  {"tip": "HISSE", "ticker": "SISE.IS",  "lot": 338, "maliyet": 53.76,  "logo": "🥛 𝗦𝗜𝗦𝗘"},
-    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔𝗟𝗧𝗜𝗡.𝗦𝟭"},
-    "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 𝗚𝗿𝗮𝗺 𝗔𝗹𝘁ı𝗻"},
-    "CEYREK_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🪙 𝗖̧𝗲𝘆𝗿𝗲𝗸 𝗔𝗹𝘁ı𝗻"},
-    "YARIM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🌗 𝗬𝗮𝗿ı𝗺 𝗔𝗹𝘁ı𝗻"},
-    "ATA_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "👑 𝗔𝘁𝗮 𝗔𝗹𝘁ı𝗻"}
+    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔𝗟𝗧\u200b𝗜𝗡.𝗦𝟭"},
+    "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 Gram Altin"},
+    "CEYREK_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🪙 Ceyrek Altin"},
+    "YARIM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🌗 Yarim Altin"},
+    "ATA_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "👑 Ata Altin"}
 }
 
 def guvenlik_kontrolu(user_id):
@@ -92,6 +92,7 @@ def veri_tabani_kur():
     conn.close()
 
 def varliklari_getir():
+    veri_tabani_kur()
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT varlik_adi, tip, ticker, lot, maliyet FROM portfoy_varliklari")
@@ -100,6 +101,7 @@ def varliklari_getir():
     return {row[0]: {"tip": row[1], "ticker": row[2], "lot": row[3], "maliyet": row[4]} for row in rows}
 
 def doviz_kasasini_getir():
+    veri_tabani_kur()
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT doviz_turu, miktar FROM doviz_kasasi")
@@ -481,5 +483,5 @@ if __name__ == "__main__":
     veri_tabani_kur()
     Thread(target=sunucu_calistir).start()
     Thread(target=alarm_kontrol_dongusu).start()
-    print("👑 Grand Vault v5.3 Kurumsal Sürüm Hazır...")
+    print("👑 Grand Vault v5.5 Kurumsal Sürüm Hazır...")
     bot.infinity_polling()
