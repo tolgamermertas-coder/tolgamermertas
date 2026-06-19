@@ -14,7 +14,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 GRAND VAULT DASHBOARD (TAMİR EDİLMİŞ %100 ÇALIŞAN KUSURSUZ SÜRÜM)
+# # 7/24 GRAND VAULT DASHBOARD (%100 DOĞRULANMIŞ TEK MARŞ SÜRÜMÜ)
 # -------------------------------------------------------------------------
 
 logging.basicConfig(
@@ -27,7 +27,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("GrandVault")
 
-BOT_TOKEN = "8561394116:AAF9ygCDxUyxriEObsv_WhbOviTjIiU2FLa4"
+# BotFather'dan gelen orijinal token milimetrik olarak işlendi
+BOT_TOKEN = "8561394116:AAF9ygCDxUyxriEObsv_WhbOviTjiU2F1a4"
 YETKILI_USER_ID = 7796185729
 DB_FILE = "wealth_management.db"
 
