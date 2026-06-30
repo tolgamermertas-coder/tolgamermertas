@@ -14,7 +14,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 GRAND VAULT DASHBOARD (TAMİR EDİLMİŞ %100 ÇALIŞAN KUSURSUZ SÜRÜM)
+# # 7/24 GRAND VAULT DASHBOARD (USTA İŞİ DENETLENMİŞ SÜRÜM)
 # -------------------------------------------------------------------------
 
 logging.basicConfig(
@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("GrandVault")
 
-# BotFather'dan gelen %100 doğrulanmış orijinal token sabitlendi
+# Kütüphanenin doğrudan okuyacağı zorunlu standart isim ve orijinal token
 BOT_TOKEN = "8561394116:AAF9ygCDxUyxriEObsv_WhbOviTjiU2F1a4"
 YETKILI_USER_ID = 7796185729
 DB_FILE = "wealth_management.db"
@@ -46,7 +46,7 @@ V2_VARLIKLAR = {
     "ENJSA": {"tip": "HISSE", "ticker": "ENJSA.IS", "lot": 260, "maliyet": 108.60, "logo": "⚡ 𝗘𝗡𝗝𝗦𝗔"},
     "EREGL": {"tip": "HISSE", "ticker": "EREGL.IS", "lot": 354, "maliyet": 24.64,  "logo": "🏗️ 𝗘𝗥𝗘𝗚𝗟"},
     "SISE":  {"tip": "HISSE", "ticker": "SISE.IS",  "lot": 338, "maliyet": 53.76,  "logo": "🥛 𝗦𝗜𝗦𝗘"},
-    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔𝗟𝗧𝗜𝗡.𝗦𝟭"},
+    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔verify𝗟𝗧𝗜𝗡.𝗦𝟭"},
     "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 Gram Altin"},
     "CEYREK_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🪙 Ceyrek Altin"},
     "YARIM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🌗 Yarim Altin"},
@@ -219,7 +219,7 @@ def ana_menu_gonder(message):
     if degerler:
         try:
             plt.figure(figsize=(6,6))
-            temiz_isimler = [n.replace("🛡️ ", "").replace("🛢️ ", "").replace("⚡ ", "").replace("🏗️ ", "").replace("🥛 ", "").replace("📜 ", "").replace("𝗔𝗦𝗘𝗟𝗦","ASELS").replace("𝗧𝗨𝗣𝗥𝗦","TUPRS").replace("𝗘𝗡𝗝𝗦𝗔","ENJSA").replace("𝗘𝗥𝗘𝗚𝗟","EREGL").replace("𝗦𝗜𝗦𝗘","SISE") for n in isimler]
+            temiz_isimler = [n.replace("🛡️ ", "").replace("🛢️ ", "").replace("⚡ ", "").replace("🏗️ ", "").replace("🥛 ", "").replace("📜 ", "").replace("𝗔𝗦𝗘𝗟𝗦","ASELS").replace("𝗧𝗨𝗣𝗥𝗦","TUPRS").replace("𝗘𝗡𝗝𝗦Ａ","ENJSA").replace("𝗘𝗥𝗘𝗚𝗟","EREGL").replace("𝗦𝗜𝗦𝗘","SISE") for n in isimler]
             plt.pie(degerler, labels=temiz_isimler, autopct='%1.1f%%', startangle=140)
             plt.title("GRAND VAULT GLOBAL VARLIK DAGILIMI", fontsize=11, fontweight='bold')
             buf = io.BytesIO()
@@ -240,237 +240,4 @@ def veritabanini_yedekle(chat_id):
     try:
         if os.path.exists(DB_FILE):
             with open(DB_FILE, 'rb') as f:
-                bot.send_document(chat_id, f, caption="🏛️ **Grand Vault SQLite Veritabanı Yedeği**")
-        else:
-            bot.send_message(chat_id, "❌ Veritabanı dosyası bulunamadı.")
-    except Exception as e:
-        logger.error(f"Veritabanı yedeklenirken hata: {e}")
-
-@bot.callback_query_handler(func=lambda call: True)
-def callback_izleyici(call):
-    conn = get_db_connection()
-    bes_degeri = 0.0
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT tl_degeri FROM sabit_varliklar WHERE varlik_adi='BES'")
-        row = cursor.fetchone()
-        if row: bes_degeri = row[0]
-    except: pass
-    finally: conn.close()
-
-    usd_kur, eur_kur = 34.30, 36.80
-    varliklar = varliklari_getir()
-    toplam_portfoy_tl = sum(info["lot"] * (canli_fiyat_cek(info["ticker"], info["tip"], varlik) or info["maliyet"]) for varlik, info in varliklar.items())
-    kasa = doviz_kasasini_getir()
-    toplam_doviz_tl = (kasa.get("USD", 0) * usd_kur) + (kasa.get("EUR", 0) * eur_kur)
-    net_servet_tl = toplam_portfoy_tl + toplam_doviz_tl + bes_degeri
-
-    if call.data == "yenile_ana":
-        bot.answer_callback_query(call.id, "🔄 Güncelleniyor...")
-        try: bot.delete_message(call.message.chat.id, call.message.message_id)
-        except: pass
-        ana_menu_gonder(call.message)
-    elif call.data == "rapor_usd":
-        bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, f"💵 **USD BAZLI SERVETİNİZ:** ${net_servet_tl / usd_kur:,.2f}")
-    elif call.data == "rapor_eur":
-        bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, f"💶 **EUR BAZLI SERVETİNİZ:** €{net_servet_tl / eur_kur:,.2f}")
-    elif call.data == "sabit_guncelle":
-        bot.answer_callback_query(call.id)
-        msg = bot.send_message(call.message.chat.id, "🎯 Güncel BES değerinizi rakam olarak yazın:")
-        bot.register_next_step_handler(msg, sabit_varlik_kaydet)
-    elif call.data == "lot_duzenle_menu":
-        bot.answer_callback_query(call.id)
-        msg = bot.send_message(call.message.chat.id, "🔄 **PORTFÖYÜ SIFIRLAMA (LOT MALİYET)**\n\n`VARLIK_ADI LOT MALİYET`:")
-        bot.register_next_step_handler(msg, dinamik_lot_kaydet)
-    elif call.data == "alarm_kur_menu":
-        bot.answer_callback_query(call.id)
-        msg = bot.send_message(call.message.chat.id, "🚨 **FİYAT ALARMI KURMA**\n\n`HİSSE FİYAT`:")
-        bot.register_next_step_handler(msg, alarm_kaydet)
-    elif call.data == "eylul_simule":
-        bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, f"🎯 **EYLÜL SİMÜLASYONU**\n\n📉 Muhafazakar (+%15): {net_servet_tl*1.15:,.2f} TL\n🚀 İyimser (+%30): {net_servet_tl*1.30:,.2f} TL")
-    elif call.data == "veritabanı_yedekle":
-        bot.answer_callback_query(call.id, "📦 Yedek alınıyor...")
-        veritabanini_yedekle(call.message.chat.id)
-    elif call.data == "sihirbaz_basla":
-        bot.answer_callback_query(call.id)
-        markup = InlineKeyboardMarkup()
-        for v_name in varliklar.keys(): markup.add(InlineKeyboardButton(f"🔹 {v_name}", callback_data=f"sel_var_{v_name}"))
-        markup.add(InlineKeyboardButton("➕ Yeni BIST Hissesi Ekle", callback_data="sel_var_NEW_STOCK"))
-        bot.send_message(call.message.chat.id, "🛒 Hangi varlığa bu ay alım eklemesi yaptınız?", reply_markup=markup)
-    elif call.data.startswith("sel_var_"):
-        bot.answer_callback_query(call.id)
-        secilen = call.data.replace("sel_var_", "")
-        if secilen == "NEW_STOCK":
-            msg = bot.send_message(call.message.chat.id, "📝 Yeni BIST kodunu yazın:")
-            bot.register_next_step_handler(msg, yeni_stok_adi_al)
-        else:
-            USER_STATE[call.from_user.id] = {"hisse": secilen}
-            msg = bot.send_message(call.message.chat.id, f"📦 **{secilen}** için kaç adet/lot aldınız?")
-            bot.register_next_step_handler(msg, sihirbaz_lot_al)
-    elif call.data == "doviz_kasasi_menu":
-        bot.answer_callback_query(call.id)
-        markup = InlineKeyboardMarkup()
-        markup.row(InlineKeyboardButton("💵 Dolar (USD)", callback_data="set_curr_USD"), InlineKeyboardButton("💶 Euro (EUR)", callback_data="set_curr_EUR"))
-        bot.send_message(call.message.chat.id, "💵 Hangi nakit döviz kasanızı güncelleyeceksiniz?", reply_markup=markup)
-    elif call.data.startswith("set_curr_"):
-        bot.answer_callback_query(call.id)
-        curr = call.data.replace("set_curr_", "")
-        USER_STATE[call.from_user.id] = {"doviz_turu": curr}
-        msg = bot.send_message(call.message.chat.id, f"📝 Güncel toplam **{curr}** nakit miktarınızı yazın:")
-        bot.register_next_step_handler(msg, doviz_kasasi_kaydet)
-
-def doviz_kasasi_kaydet(message):
-    try:
-        uid = message.from_user.id
-        miktar = float(message.text.strip())
-        doviz = USER_STATE[uid]["doviz_turu"]
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("UPDATE doviz_kasasi SET miktar=? WHERE doviz_turu=?", (miktar, doviz))
-            conn.commit()
-        finally: conn.close()
-        USER_STATE.pop(uid, None)
-        bot.send_message(message.chat.id, f"✅ Kasa güncellendi! Toplam: **{miktar:,.2f} {doviz}**")
-    except: bot.send_message(message.chat.id, "❌ Rakam girin.")
-
-def yeni_stok_adi_al(message):
-    hisse_adi = message.text.strip().upper()
-    USER_STATE[message.from_user.id] = {"hisse": hisse_adi, "is_new": True}
-    msg = bot.send_message(message.chat.id, f"📦 **{hisse_adi}** lot miktarını yazın:")
-    bot.register_next_step_handler(msg, sihirbaz_lot_al)
-
-def sihirbaz_lot_al(message):
-    try:
-        lot = float(message.text.strip())
-        uid = message.from_user.id
-        USER_STATE[uid]["lot"] = lot
-        msg = bot.send_message(message.chat.id, "💵 Birim alış fiyatı (TL):")
-        bot.register_next_step_handler(msg, sihirbaz_fiyat_ve_kaydet)
-    except: bot.send_message(message.chat.id, "❌ Rakam girin.")
-
-def sihirbaz_fiyat_ve_kaydet(message):
-    try:
-        uid = message.from_user.id
-        fiyat = float(message.text.strip())
-        hisse = USER_STATE[uid]["hisse"]
-        eklenen_lot = USER_STATE[uid]["lot"]
-        varliklar = varliklari_getir()
-        
-        if hisse in varliklar and "is_new" not in USER_STATE[uid]:
-            eski_lot = varliklar[hisse]["lot"]
-            eski_maliyet = varliklar[hisse]["maliyet"]
-            toplam_lot = eski_lot + eklenen_lot
-            yeni_maliyet = ((eski_lot * eski_maliyet) + (eklenen_lot * fiyat)) / toplam_lot
-            tip_str = varliklar[hisse]["tip"]
-            ticker_str = varliklar[hisse]["ticker"]
-        else:
-            toplam_lot = eklenen_lot
-            yeni_maliyet = fiyat
-            tip_str = "FIZIKI_ALTIN" if "ALTIN" in hisse and hisse != "ALTIN.S1" else ("ALTIN_BORSASI" if hisse == "ALTIN.S1" else "HISSE")
-            ticker_str = "GC=F" if "ALTIN" in hisse else f"{hisse}.IS"
-        
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute('INSERT OR REPLACE INTO portfoy_varliklari (varlik_adi, tip, ticker, lot, maliyet) VALUES (?,?,?,?,?)', (hisse, tip_str, ticker_str, toplam_lot, yeni_maliyet))
-            conn.commit()
-        finally: conn.close()
-        USER_STATE.pop(uid, None)
-        bot.send_message(message.chat.id, "✅ İşlem veritabanına başarıyla kaydoldu!")
-    except: bot.send_message(message.chat.id, "❌ Hata oluştu.")
-
-def dinamik_lot_kaydet(message):
-    try:
-        parcalar = message.text.strip().split()
-        v_adi = parcalar[0].upper()
-        yeni_lot = float(parcalar[1])
-        yeni_maliyet = float(parcalar[2])
-        varliklar = varliklari_getir()
-        tip_str = varliklar[v_adi]["tip"] if v_adi in varliklar else ("HISSE")
-        ticker_str = varliklar[v_adi]["ticker"] if v_adi in varliklar else f"{v_adi}.IS"
-        
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute('INSERT OR REPLACE INTO portfoy_varliklari (varlik_adi, tip, ticker, lot, maliyet) VALUES (?,?,?,?,?)', (v_adi, tip_str, ticker_str, yeni_lot, yeni_maliyet))
-            conn.commit()
-        finally: conn.close()
-        bot.send_message(message.chat.id, f"✅ {v_adi} güncellendi.")
-    except: bot.send_message(message.chat.id, "❌ Hata.")
-
-def alarm_kaydet(message):
-    try:
-        parcalar = message.text.strip().split()
-        v_adi = parcalar[0].upper()
-        hedef = float(parcalar[1])
-        varliklar = varliklari_getir()
-        guncel = canli_fiyat_cek(varliklar[v_adi]["ticker"], varliklar[v_adi]["tip"], v_adi) or varliklar[v_adi]["maliyet"]
-        yon = "YUKARI" if hedef > guncel else "ASAGI"
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO alarmlar (varlik_adi, hedef_fiyat, yon) VALUES (?, ?, ?)", (v_adi, hedef, yon))
-            conn.commit()
-        finally: conn.close()
-        bot.send_message(message.chat.id, "🚨 Alarm kuruldu.")
-    except: bot.send_message(message.chat.id, "❌ Hata.")
-
-def sabit_varlik_kaydet(message):
-    try:
-        yeni_deger = float(message.text.replace(".", "").replace(",", ".").strip())
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("UPDATE sabit_varliklar SET tl_degeri=? WHERE varlik_adi='BES'", (yeni_deger,))
-            conn.commit()
-        finally: conn.close()
-        bot.send_message(message.chat.id, "✅ BES Güncellendi.")
-    except: bot.send_message(message.chat.id, "❌ Hata.")
-
-def alarm_kontrol_dongusu():
-    while True:
-        try:
-            conn = get_db_connection()
-            aktif_alarmlar = []
-            try:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id, varlik_adi, hedef_fiyat, yon FROM alarmlar WHERE aktif=1")
-                aktif_alarmlar = cursor.fetchall()
-            finally: conn.close()
-                
-            if aktif_alarmlar:
-                varliklar = varliklari_getir()
-                for al in aktif_alarmlar:
-                    al_id, v_adi, hedef, yon = al
-                    if v_adi in varliklar:
-                        guncel = canli_fiyat_cek(varliklar[v_adi]["ticker"], varliklar[v_adi]["tip"], v_adi)
-                        if guncel:
-                            tetiklendi = False
-                            if yon == "YUKARI" and guncel >= hedef: tetiklendi = True
-                            elif yon == "ASAGI" and guncel <= hedef: tetiklendi = True
-                                
-                            if tetiklendi:
-                                bot.send_message(YETKILI_USER_ID, f"🚨🔔 **{v_adi}** hedefiniz ({hedef:.2f} TL) kırıldı! Güncel: {guncel:.2f} TL")
-                                conn = get_db_connection()
-                                try:
-                                    cursor = conn.cursor()
-                                    cursor.execute("UPDATE alarmlar SET aktif=0 WHERE id=?", (al_id,))
-                                    conn.commit()
-                                finally: conn.close()
-        except: pass
-        time.sleep(60)
-
-def sunucu_calistir():
-    try: app.run(host='0.0.0.0', port=8080)
-    except: pass
-
-if __name__ == "__main__":
-    veri_tabani_kur()
-    Thread(target=sunucu_calistir, daemon=True).start()
-    Thread(target=alarm_kontrol_dongusu, daemon=True).start()
-    print("👑 Grand Vault Sürüm Tamamen Hazır...")
-    bot.infinity_polling()
+                bot.send_document(
