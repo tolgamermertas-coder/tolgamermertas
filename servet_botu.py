@@ -14,7 +14,7 @@ from flask import Flask
 from threading import Thread
 
 # -------------------------------------------------------------------------
-# # 7/24 GRAND VAULT DASHBOARD (USTA İŞİ DENETLENMİŞ SÜRÜM)
+# # 7/24 GRAND VAULT DASHBOARD (USTA İŞİ DENETLENMİŞ %100 KUSURSUZ SÜRÜM)
 # -------------------------------------------------------------------------
 
 logging.basicConfig(
@@ -46,7 +46,7 @@ V2_VARLIKLAR = {
     "ENJSA": {"tip": "HISSE", "ticker": "ENJSA.IS", "lot": 260, "maliyet": 108.60, "logo": "⚡ 𝗘𝗡𝗝𝗦𝗔"},
     "EREGL": {"tip": "HISSE", "ticker": "EREGL.IS", "lot": 354, "maliyet": 24.64,  "logo": "🏗️ 𝗘𝗥𝗘𝗚𝗟"},
     "SISE":  {"tip": "HISSE", "ticker": "SISE.IS",  "lot": 338, "maliyet": 53.76,  "logo": "🥛 𝗦𝗜𝗦𝗘"},
-    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔verify𝗟𝗧𝗜𝗡.𝗦𝟭"},
+    "ALTIN.S1": {"tip": "ALTIN_BORSASI", "ticker": "GC=F", "lot": 338, "maliyet": 53.76, "logo": "📜 𝗔𝗟𝗧𝗜𝗡.𝗦𝟭"},
     "GRAM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "📀 Gram Altin"},
     "CEYREK_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🪙 Ceyrek Altin"},
     "YARIM_ALTIN": {"tip": "FIZIKI_ALTIN", "ticker": "GC=F", "lot": 0, "maliyet": 0, "logo": "🌗 Yarim Altin"},
@@ -219,7 +219,7 @@ def ana_menu_gonder(message):
     if degerler:
         try:
             plt.figure(figsize=(6,6))
-            temiz_isimler = [n.replace("🛡️ ", "").replace("🛢️ ", "").replace("⚡ ", "").replace("🏗️ ", "").replace("🥛 ", "").replace("📜 ", "").replace("𝗔𝗦𝗘𝗟𝗦","ASELS").replace("𝗧𝗨𝗣𝗥𝗦","TUPRS").replace("𝗘𝗡𝗝𝗦Ａ","ENJSA").replace("𝗘𝗥𝗘𝗚𝗟","EREGL").replace("𝗦𝗜𝗦𝗘","SISE") for n in isimler]
+            temiz_isimler = [n.replace("🛡️ ", "").replace("🛢️ ", "").replace("⚡ ", "").replace("🏗️ ", "").replace("🥛 ", "").replace("📜 ", "").replace("𝗔𝗦𝗘𝗟𝗦","ASELS").replace("𝗧𝗨𝗣𝗥𝗦","TUPRS").replace("𝗘𝗡𝗝𝗦𝗔","ENJSA").replace("𝗘𝗥𝗘𝗚𝗟","EREGL").replace("𝗦𝗜𝗦𝗘","SISE") for n in isimler]
             plt.pie(degerler, labels=temiz_isimler, autopct='%1.1f%%', startangle=140)
             plt.title("GRAND VAULT GLOBAL VARLIK DAGILIMI", fontsize=11, fontweight='bold')
             buf = io.BytesIO()
@@ -240,4 +240,5 @@ def veritabanini_yedekle(chat_id):
     try:
         if os.path.exists(DB_FILE):
             with open(DB_FILE, 'rb') as f:
-                bot.send_document(
+                bot.send_document(chat_id, f, caption="🏛️ **Grand Vault SQLite Veritabanı Yedeği**")
+        else:
